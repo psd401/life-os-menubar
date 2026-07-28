@@ -425,9 +425,10 @@ private struct TaskRow: View {
           .font(.caption2)
           .foregroundStyle(.tertiary)
       }
+      .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .contentShape(Rectangle())
+    .frame(maxWidth: .infinity)
     .accessibilityLabel("Open task #\(issue.number): \(issue.title)")
     .padding(.vertical, 2)
   }
