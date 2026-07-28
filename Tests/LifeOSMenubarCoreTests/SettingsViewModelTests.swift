@@ -52,6 +52,32 @@ struct SettingsViewModelTests {
   }
 
   @Test
+  func olderValidationCannotOverwriteNewerResult() async {
+    let validator = ControlledTokenValidator()
+    let viewModel = makeViewModel(validator: validator)
+
+    viewModel.token = "first-token"
+    let firstValidation = Task { @MainActor in
+      await viewModel.validateToken()
+    }
+    await validator.waitUntilPending(token: "first-token")
+
+    viewModel.token = "second-token"
+    let secondValidation = Task { @MainActor in
+      await viewModel.validateToken()
+    }
+    await validator.waitUntilPending(token: "second-token")
+
+    await validator.succeed(token: "second-token", login: "newest-result")
+    await secondValidation.value
+    #expect(viewModel.validationState == .valid(login: "newest-result"))
+
+    await validator.succeed(token: "first-token", login: "stale-result")
+    await firstValidation.value
+    #expect(viewModel.validationState == .valid(login: "newest-result"))
+  }
+
+  @Test
   func clearDeletesKeychainTokenAndResetsValidation() async {
     let tokenStore = TokenStoreSpy(storedToken: "saved-token")
     let validator = TokenValidatorStub(result: .success("octocat"))
@@ -82,7 +108,7 @@ struct SettingsViewModelTests {
 
   private func makeViewModel(
     tokenStore: TokenStoreSpy = TokenStoreSpy(),
-    validator: TokenValidatorStub = TokenValidatorStub(result: .success("octocat")),
+    validator: any GitHubTokenValidating = TokenValidatorStub(result: .success("octocat")),
     launchController: LaunchAtLoginControllerSpy = LaunchAtLoginControllerSpy()
   ) -> SettingsViewModel {
     SettingsViewModel(
@@ -141,6 +167,37 @@ private struct TokenValidatorStub: GitHubTokenValidating {
 
   func validate(token: String) async throws -> String {
     try result.get()
+  }
+}
+
+private actor ControlledTokenValidator: GitHubTokenValidating {
+  private var pendingValidations: [String: CheckedContinuation<String, any Error>] = [:]
+  private var registrationWaiters: [String: [CheckedContinuation<Void, Never>]] = [:]
+
+  func validate(token: String) async throws -> String {
+    try await withCheckedThrowingContinuation { continuation in
+      pendingValidations[token] = continuation
+      for waiter in registrationWaiters.removeValue(forKey: token) ?? [] {
+        waiter.resume()
+      }
+    }
+  }
+
+  func waitUntilPending(token: String) async {
+    guard pendingValidations[token] == nil else {
+      return
+    }
+
+    await withCheckedContinuation { continuation in
+      registrationWaiters[token, default: []].append(continuation)
+    }
+  }
+
+  func succeed(token: String, login: String) {
+    guard let continuation = pendingValidations.removeValue(forKey: token) else {
+      preconditionFailure("No pending validation for \(token)")
+    }
+    continuation.resume(returning: login)
   }
 }
 

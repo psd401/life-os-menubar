@@ -19,6 +19,7 @@ public final class SettingsViewModel: ObservableObject {
   private let tokenStore: any TokenStoring
   private let validator: any GitHubTokenValidating
   private let launchAtLoginController: any LaunchAtLoginControlling
+  private var validationGeneration = 0
 
   public init(
     tokenStore: any TokenStoring,
@@ -66,6 +67,8 @@ public final class SettingsViewModel: ObservableObject {
   }
 
   public func validateToken() async {
+    validationGeneration += 1
+    let generation = validationGeneration
     let candidate = token.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !candidate.isEmpty else {
       validationState = .invalid(message: "Enter a GitHub personal access token.")
@@ -75,14 +78,16 @@ public final class SettingsViewModel: ObservableObject {
     validationState = .validating
     do {
       let login = try await validator.validate(token: candidate)
-      guard token.trimmingCharacters(in: .whitespacesAndNewlines) == candidate else {
-        validationState = .idle
+      guard generation == validationGeneration,
+        token.trimmingCharacters(in: .whitespacesAndNewlines) == candidate
+      else {
         return
       }
       validationState = .valid(login: login)
     } catch {
-      guard token.trimmingCharacters(in: .whitespacesAndNewlines) == candidate else {
-        validationState = .idle
+      guard generation == validationGeneration,
+        token.trimmingCharacters(in: .whitespacesAndNewlines) == candidate
+      else {
         return
       }
       validationState = .invalid(message: error.localizedDescription)
