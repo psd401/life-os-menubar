@@ -8,6 +8,7 @@ final class StatusItemController {
   private let onPanelOpen: () -> Void
   private let statusItem: NSStatusItem
   private var cancellables: Set<AnyCancellable> = []
+  private var renderedBadgeCount: Int?
 
   init(
     panelController: PanelController,
@@ -50,6 +51,11 @@ final class StatusItemController {
   }
 
   private func updateBadge(count: Int) {
+    guard renderedBadgeCount != count else {
+      return
+    }
+    renderedBadgeCount = count
+
     statusItem.length = count > 0 ? NSStatusItem.variableLength : NSStatusItem.squareLength
     statusItem.button?.image = StatusItemBadgeRenderer.image(count: count)
     statusItem.button?.setAccessibilityLabel(
