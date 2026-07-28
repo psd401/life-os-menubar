@@ -11,7 +11,7 @@ Native macOS menubar app fronting `krishagel/life-os` (GitHub Issues as tasks).
 
 ```sh
 swift test
-swift format lint --strict --recursive Sources Tests
+swift format lint --strict --recursive Sources Tests Package.swift
 xcodebuild test \
   -project LifeOSMenubar.xcodeproj \
   -scheme LifeOSMenubar \

@@ -61,6 +61,30 @@ struct GitHubTokenValidatorTests {
     }
   }
 
+  @Test
+  func preservesForbiddenStatusForPermissionOrRateLimitFailures() async {
+    URLProtocolStub.handler = { request in
+      let response = try #require(
+        HTTPURLResponse(
+          url: request.url!,
+          statusCode: 403,
+          httpVersion: nil,
+          headerFields: nil
+        )
+      )
+      return (response, Data())
+    }
+
+    let validator = GitHubTokenValidator(
+      session: makeStubbedSession(),
+      endpoint: URL(string: "https://example.test/graphql")!
+    )
+
+    await #expect(throws: GitHubTokenValidationError.requestFailed(statusCode: 403)) {
+      try await validator.validate(token: "valid-but-forbidden-token")
+    }
+  }
+
   private func makeStubbedSession() -> URLSession {
     let configuration = URLSessionConfiguration.ephemeral
     configuration.protocolClasses = [URLProtocolStub.self]

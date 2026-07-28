@@ -60,7 +60,7 @@ public struct GitHubTokenValidator: GitHubTokenValidating {
       throw GitHubTokenValidationError.invalidResponse
     }
     guard httpResponse.statusCode == 200 else {
-      if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+      if httpResponse.statusCode == 401 {
         throw GitHubTokenValidationError.rejected
       }
       throw GitHubTokenValidationError.requestFailed(statusCode: httpResponse.statusCode)

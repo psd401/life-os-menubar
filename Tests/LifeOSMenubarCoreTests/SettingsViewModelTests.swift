@@ -20,26 +20,19 @@ struct SettingsViewModelTests {
   }
 
   @Test
-  func saveDelegatesTokenPersistenceExclusivelyToTokenStore() throws {
+  func saveDelegatesTokenPersistenceExclusivelyToTokenStore() {
     let tokenStore = TokenStoreSpy()
     let launchController = LaunchAtLoginControllerSpy()
     let viewModel = makeViewModel(
       tokenStore: tokenStore,
       launchController: launchController
     )
-    let defaultsName = "SettingsViewModelTests.\(UUID().uuidString)"
-    let defaults = try #require(UserDefaults(suiteName: defaultsName))
-    defaults.set("unchanged", forKey: "githubToken")
-    defer {
-      defaults.removePersistentDomain(forName: defaultsName)
-    }
 
     viewModel.token = "  new-token  "
     let didSave = viewModel.saveToken()
 
     #expect(didSave)
     #expect(tokenStore.savedTokens == ["new-token"])
-    #expect(defaults.string(forKey: "githubToken") == "unchanged")
   }
 
   @Test
