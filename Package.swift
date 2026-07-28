@@ -17,6 +17,12 @@ let package = Package(
       targets: ["LifeOSMenubar"]
     ),
   ],
+  dependencies: [
+    .package(
+      url: "https://github.com/sindresorhus/KeyboardShortcuts",
+      exact: "2.3.0"
+    )
+  ],
   targets: [
     .target(
       name: "LifeOSMenubarCore",
@@ -24,7 +30,10 @@ let package = Package(
     ),
     .executableTarget(
       name: "LifeOSMenubar",
-      dependencies: ["LifeOSMenubarCore"],
+      dependencies: [
+        "LifeOSMenubarCore",
+        .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+      ],
       path: "Sources/LifeOSMenubarApp"
     ),
     .testTarget(

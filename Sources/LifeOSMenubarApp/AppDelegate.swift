@@ -1,8 +1,10 @@
 import AppKit
+import KeyboardShortcuts
 import LifeOSMenubarCore
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+  private var quickCaptureWindowController: QuickCaptureWindowController?
   private var statusItemController: StatusItemController?
   private var settingsWindowController: SettingsWindowController?
   private var taskListViewModel: TaskListViewModel?
@@ -25,6 +27,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       filterStore: JSONTaskFilterStore()
     )
     let settingsWindowController = SettingsWindowController(viewModel: settingsViewModel)
+    let quickCaptureWindowController = QuickCaptureWindowController(
+      viewModel: QuickCaptureViewModel(client: GitHubRESTIssueClient()),
+      tokenProvider: {
+        settingsViewModel.token
+      },
+      onCreated: { issue in
+        taskListViewModel.reconcileRemoteIssue(issue)
+        Task {
+          await taskListViewModel.refresh(token: settingsViewModel.token)
+        }
+      }
+    )
     let panelController = PanelController(
       rootView: PanelView(
         settingsViewModel: settingsViewModel,
@@ -39,6 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     )
 
     self.settingsWindowController = settingsWindowController
+    self.quickCaptureWindowController = quickCaptureWindowController
     self.taskListViewModel = taskListViewModel
     self.statusItemController = StatusItemController(
       panelController: panelController,
@@ -48,6 +63,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
       }
     )
+
+    KeyboardShortcuts.onKeyUp(for: .quickCapture) { [weak quickCaptureWindowController] in
+      quickCaptureWindowController?.showCapture()
+    }
 
     taskListViewModel.startBackgroundRefresh {
       settingsViewModel.token

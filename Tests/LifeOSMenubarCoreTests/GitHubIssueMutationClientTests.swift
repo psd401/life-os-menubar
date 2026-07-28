@@ -71,6 +71,51 @@ struct GitHubIssueMutationClientTests {
   }
 
   @Test
+  func createsIssueWithTrimmedContentAndContractLabels() async throws {
+    MutationURLProtocolStub.handler = { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.url?.path == "/repos/krishagel/life-os/issues")
+      let body = try JSONDecoder().decode(
+        CreateRequestPayload.self,
+        from: try mutationRequestBody(from: request)
+      )
+      #expect(body.title == "Captured task")
+      #expect(body.body == "Remember the details")
+      #expect(
+        body.labels
+          == ["status:inbox", "type:task", "source:manual", "priority:p2"]
+      )
+      return try mutationResponse(
+        for: request,
+        statusCode: 201,
+        json: issueMutationJSON(state: "open")
+      )
+    }
+
+    let issue = try await makeMutationClient().createIssue(
+      token: "token",
+      title: "  Captured task\n",
+      body: "\nRemember the details  ",
+      labels: ["status:inbox", "type:task", "source:manual", "priority:p2"]
+    )
+
+    #expect(issue.state == .open)
+    #expect(issue.number == 42)
+  }
+
+  @Test
+  func rejectsEmptyIssueTitleBeforeSendingRequest() async {
+    await #expect(throws: GitHubIssueMutationClientError.emptyTitle) {
+      try await makeMutationClient().createIssue(
+        token: "token",
+        title: " \n ",
+        body: "",
+        labels: []
+      )
+    }
+  }
+
+  @Test
   func labelOnlyUpdateOmitsState() async throws {
     MutationURLProtocolStub.handler = { request in
       let bodyData = try mutationRequestBody(from: request)
@@ -128,6 +173,12 @@ private struct CommentRequestPayload: Decodable {
 private struct UpdateRequestPayload: Decodable {
   let labels: [String]
   let state: String?
+}
+
+private struct CreateRequestPayload: Decodable {
+  let title: String
+  let body: String?
+  let labels: [String]
 }
 
 private func issueMutationJSON(state: String) -> String {
