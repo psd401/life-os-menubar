@@ -16,6 +16,8 @@
 		B00000000000000000000007 /* IssueCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000007 /* IssueCacheStore.swift */; };
 		B00000000000000000000008 /* IssueSyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000008 /* IssueSyncEngine.swift */; };
 		B00000000000000000000009 /* TaskListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000009 /* TaskListViewModel.swift */; };
+		B00000000000000000000010 /* TaskFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000010 /* TaskFilter.swift */; };
+		B00000000000000000000011 /* TaskFilterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000011 /* TaskFilterStore.swift */; };
 		B00000000000000000000101 /* LifeOSMenubarMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000101 /* LifeOSMenubarMain.swift */; };
 		B00000000000000000000102 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000102 /* AppDelegate.swift */; };
 		B00000000000000000000103 /* PanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000103 /* PanelController.swift */; };
@@ -30,6 +32,8 @@
 		B00000000000000000000205 /* IssueSyncEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000205 /* IssueSyncEngineTests.swift */; };
 		B00000000000000000000206 /* TaskListPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000206 /* TaskListPresentationTests.swift */; };
 		B00000000000000000000207 /* TaskListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000207 /* TaskListViewModelTests.swift */; };
+		B00000000000000000000208 /* TaskFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000208 /* TaskFilterTests.swift */; };
+		B00000000000000000000209 /* TaskFilterStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000209 /* TaskFilterStoreTests.swift */; };
 		B00000000000000000000401 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
 		B00000000000000000000402 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
 /* End PBXBuildFile section */
@@ -61,6 +65,8 @@
 		F00000000000000000000007 /* IssueCacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueCacheStore.swift; sourceTree = "<group>"; };
 		F00000000000000000000008 /* IssueSyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueSyncEngine.swift; sourceTree = "<group>"; };
 		F00000000000000000000009 /* TaskListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListViewModel.swift; sourceTree = "<group>"; };
+		F00000000000000000000010 /* TaskFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFilter.swift; sourceTree = "<group>"; };
+		F00000000000000000000011 /* TaskFilterStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFilterStore.swift; sourceTree = "<group>"; };
 		F00000000000000000000101 /* LifeOSMenubarMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeOSMenubarMain.swift; sourceTree = "<group>"; };
 		F00000000000000000000102 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F00000000000000000000103 /* PanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelController.swift; sourceTree = "<group>"; };
@@ -75,6 +81,8 @@
 		F00000000000000000000205 /* IssueSyncEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueSyncEngineTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000206 /* TaskListPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListPresentationTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000207 /* TaskListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListViewModelTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000208 /* TaskFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFilterTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000209 /* TaskFilterStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFilterStoreTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000301 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F00000000000000000000401 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		F00000000000000000000402 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -143,6 +151,8 @@
 				F00000000000000000000007 /* IssueCacheStore.swift */,
 				F00000000000000000000008 /* IssueSyncEngine.swift */,
 				F00000000000000000000009 /* TaskListViewModel.swift */,
+				F00000000000000000000010 /* TaskFilter.swift */,
+				F00000000000000000000011 /* TaskFilterStore.swift */,
 			);
 			path = LifeOSMenubarCore;
 			sourceTree = "<group>";
@@ -179,6 +189,8 @@
 				F00000000000000000000205 /* IssueSyncEngineTests.swift */,
 				F00000000000000000000206 /* TaskListPresentationTests.swift */,
 				F00000000000000000000207 /* TaskListViewModelTests.swift */,
+				F00000000000000000000208 /* TaskFilterTests.swift */,
+				F00000000000000000000209 /* TaskFilterStoreTests.swift */,
 			);
 			path = LifeOSMenubarCoreTests;
 			sourceTree = "<group>";
@@ -334,6 +346,8 @@
 				B00000000000000000000007 /* IssueCacheStore.swift in Sources */,
 				B00000000000000000000008 /* IssueSyncEngine.swift in Sources */,
 				B00000000000000000000009 /* TaskListViewModel.swift in Sources */,
+				B00000000000000000000010 /* TaskFilter.swift in Sources */,
+				B00000000000000000000011 /* TaskFilterStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -348,6 +362,8 @@
 				B00000000000000000000205 /* IssueSyncEngineTests.swift in Sources */,
 				B00000000000000000000206 /* TaskListPresentationTests.swift in Sources */,
 				B00000000000000000000207 /* TaskListViewModelTests.swift in Sources */,
+				B00000000000000000000208 /* TaskFilterTests.swift in Sources */,
+				B00000000000000000000209 /* TaskFilterStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
