@@ -28,6 +28,7 @@ public final class TaskListViewModel: ObservableObject {
   private let syncEngine: IssueSyncEngine
   private let filterStore: any TaskFilterStoring
   private var backgroundRefreshTask: Task<Void, Never>?
+  private var lastFullSyncedAt: Date?
 
   public init(
     cacheStore: any IssueCacheStoring,
@@ -173,9 +174,34 @@ public final class TaskListViewModel: ObservableObject {
     persistFilters()
   }
 
+  public func reconcileRemoteIssue(_ issue: LifeOSIssue) {
+    if issue.state == .closed {
+      issues.removeAll { $0.number == issue.number }
+    } else if let existingIndex = issues.firstIndex(where: { $0.number == issue.number }) {
+      issues[existingIndex] = issue
+    } else {
+      issues.append(issue)
+    }
+    issues.sort { $0.number < $1.number }
+
+    do {
+      try cacheStore.save(
+        IssueCacheSnapshot(
+          issues: issues,
+          lastSyncedAt: lastSyncedAt,
+          lastFullSyncedAt: lastFullSyncedAt
+        )
+      )
+    } catch {
+      errorMessage =
+        "Task changed on GitHub, but the cache could not be saved: \(error.localizedDescription)"
+    }
+  }
+
   private func apply(_ snapshot: IssueCacheSnapshot) {
     issues = snapshot.issues
     lastSyncedAt = snapshot.lastSyncedAt
+    lastFullSyncedAt = snapshot.lastFullSyncedAt
   }
 
   private func persistFilters() {

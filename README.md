@@ -57,3 +57,17 @@ restored across app launches from:
 ```text
 ~/Library/Application Support/LifeOSMenubar/filters.json
 ```
+
+## Task detail and actions
+
+Select a task to read its Markdown description, grouped labels, and complete
+comment thread. Comments are loaded 100 at a time until every page is present
+and are displayed chronologically.
+
+Task changes use GitHub's REST API. The detail view can add a comment, change
+status or priority, add or remove non-contract labels, and close a task.
+Status and priority changes always normalize labels to exactly one
+`status:*` and one `priority:*`; missing contract labels are repaired with
+`status:inbox` and `priority:p2`. Closing sends `status:done`, the complete
+normalized label set, and the closed state in one request. Local list and cache
+state are updated only after GitHub accepts a mutation.

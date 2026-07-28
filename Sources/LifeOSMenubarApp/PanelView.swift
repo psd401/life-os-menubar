@@ -5,10 +5,34 @@ import SwiftUI
 struct PanelView: View {
   @ObservedObject var settingsViewModel: SettingsViewModel
   @ObservedObject var taskListViewModel: TaskListViewModel
+  @State private var selectedIssue: LifeOSIssue?
   let openSettings: () -> Void
   let quit: () -> Void
 
   var body: some View {
+    Group {
+      if let selectedIssue {
+        TaskDetailView(
+          issue: selectedIssue,
+          token: settingsViewModel.token,
+          availableLabels: taskListViewModel.issues.flatMap(\.labels),
+          onBack: {
+            self.selectedIssue = nil
+          },
+          onIssueUpdated: { updatedIssue in
+            taskListViewModel.reconcileRemoteIssue(updatedIssue)
+            if updatedIssue.state == .open {
+              self.selectedIssue = updatedIssue
+            }
+          }
+        )
+      } else {
+        taskList
+      }
+    }
+  }
+
+  private var taskList: some View {
     VStack(alignment: .leading, spacing: 12) {
       HStack {
         Image(systemName: "checkmark.circle")
@@ -48,7 +72,12 @@ struct PanelView: View {
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 14) {
           ForEach(taskListViewModel.sections) { section in
-            TaskSectionView(section: section)
+            TaskSectionView(
+              section: section,
+              selectIssue: { issue in
+                selectedIssue = issue
+              }
+            )
           }
         }
         .padding(.vertical, 2)
@@ -267,6 +296,7 @@ private struct FilterChip: View {
 
 private struct TaskSectionView: View {
   let section: TaskSectionSnapshot
+  let selectIssue: (LifeOSIssue) -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
@@ -286,7 +316,12 @@ private struct TaskSectionView: View {
           .padding(.leading, 2)
       } else {
         ForEach(section.issues) { issue in
-          TaskRow(issue: issue)
+          TaskRow(
+            issue: issue,
+            action: {
+              selectIssue(issue)
+            }
+          )
         }
       }
     }
@@ -295,26 +330,36 @@ private struct TaskSectionView: View {
 
 private struct TaskRow: View {
   let issue: LifeOSIssue
+  let action: () -> Void
 
   var body: some View {
-    HStack(alignment: .firstTextBaseline, spacing: 8) {
-      Text("#\(issue.number)")
-        .font(.caption.monospacedDigit())
-        .foregroundStyle(.tertiary)
-        .frame(minWidth: 42, alignment: .trailing)
+    Button(action: action) {
+      HStack(alignment: .firstTextBaseline, spacing: 8) {
+        Text("#\(issue.number)")
+          .font(.caption.monospacedDigit())
+          .foregroundStyle(.tertiary)
+          .frame(minWidth: 42, alignment: .trailing)
 
-      Text(issue.title)
-        .font(.callout)
-        .lineLimit(2)
+        Text(issue.title)
+          .font(.callout)
+          .lineLimit(2)
 
-      Spacer(minLength: 4)
+        Spacer(minLength: 4)
 
-      if let priority = issue.labels.first(where: { $0.name.hasPrefix("priority:") }) {
-        Text(priority.name.replacingOccurrences(of: "priority:", with: "").uppercased())
-          .font(.caption2.weight(.semibold))
-          .foregroundStyle(.secondary)
+        if let priority = issue.labels.first(where: { $0.name.hasPrefix("priority:") }) {
+          Text(priority.name.replacingOccurrences(of: "priority:", with: "").uppercased())
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.secondary)
+        }
+
+        Image(systemName: "chevron.right")
+          .font(.caption2)
+          .foregroundStyle(.tertiary)
       }
     }
+    .buttonStyle(.plain)
+    .contentShape(Rectangle())
+    .accessibilityLabel("Open task #\(issue.number): \(issue.title)")
     .padding(.vertical, 2)
   }
 }
