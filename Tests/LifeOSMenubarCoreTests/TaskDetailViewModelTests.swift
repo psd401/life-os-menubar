@@ -79,6 +79,32 @@ struct TaskDetailViewModelTests {
     #expect(viewModel.comments.map(\.id) == ["existing", "new"])
   }
 
+  @Test
+  func failedInitialLoadCanBeRetriedSuccessfully() async {
+    let issue = detailViewModelIssue()
+    let expectedDetail = LifeOSIssueDetail(
+      issue: issue,
+      comments: [detailViewModelComment(id: "existing", body: "Existing")]
+    )
+    let detailClient = SequencedDetailFetcherStub(
+      results: [.failure(.network), .success(expectedDetail)]
+    )
+    let viewModel = TaskDetailViewModel(
+      issue: issue,
+      detailClient: detailClient,
+      mutationClient: DetailMutationStub()
+    )
+
+    await viewModel.load(token: "token")
+    #expect(!viewModel.hasLoadedDetail)
+    #expect(viewModel.errorMessage == DetailStubError.network.localizedDescription)
+
+    await viewModel.load(token: "token")
+    #expect(viewModel.hasLoadedDetail)
+    #expect(viewModel.errorMessage == nil)
+    #expect(viewModel.comments == expectedDetail.comments)
+  }
+
   private func makeViewModel(
     issue: LifeOSIssue = detailViewModelIssue(),
     mutationClient: DetailMutationStub
@@ -109,6 +135,21 @@ private struct DetailFetcherStub: GitHubIssueDetailFetching {
 
   func fetchIssueDetail(token: String, number: Int) async throws -> LifeOSIssueDetail {
     detail
+  }
+}
+
+private actor SequencedDetailFetcherStub: GitHubIssueDetailFetching {
+  private var results: [Result<LifeOSIssueDetail, DetailStubError>]
+
+  init(results: [Result<LifeOSIssueDetail, DetailStubError>]) {
+    self.results = results
+  }
+
+  func fetchIssueDetail(token: String, number: Int) async throws -> LifeOSIssueDetail {
+    guard !results.isEmpty else {
+      throw DetailStubError.network
+    }
+    return try results.removeFirst().get()
   }
 }
 

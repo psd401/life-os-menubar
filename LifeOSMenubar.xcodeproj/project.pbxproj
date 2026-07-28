@@ -44,6 +44,7 @@
 		B00000000000000000000211 /* GitHubIssueDetailClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000211 /* GitHubIssueDetailClientTests.swift */; };
 		B00000000000000000000212 /* GitHubIssueMutationClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000212 /* GitHubIssueMutationClientTests.swift */; };
 		B00000000000000000000213 /* TaskDetailViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000213 /* TaskDetailViewModelTests.swift */; };
+		B00000000000000000000214 /* MarkdownLineParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000214 /* MarkdownLineParserTests.swift */; };
 		B00000000000000000000401 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
 		B00000000000000000000402 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
 /* End PBXBuildFile section */
@@ -103,6 +104,7 @@
 		F00000000000000000000211 /* GitHubIssueDetailClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueDetailClientTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000212 /* GitHubIssueMutationClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueMutationClientTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000213 /* TaskDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailViewModelTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000214 /* MarkdownLineParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownLineParserTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000301 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F00000000000000000000401 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		F00000000000000000000402 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -221,6 +223,7 @@
 				F00000000000000000000211 /* GitHubIssueDetailClientTests.swift */,
 				F00000000000000000000212 /* GitHubIssueMutationClientTests.swift */,
 				F00000000000000000000213 /* TaskDetailViewModelTests.swift */,
+				F00000000000000000000214 /* MarkdownLineParserTests.swift */,
 			);
 			path = LifeOSMenubarCoreTests;
 			sourceTree = "<group>";
@@ -404,6 +407,7 @@
 				B00000000000000000000211 /* GitHubIssueDetailClientTests.swift in Sources */,
 				B00000000000000000000212 /* GitHubIssueMutationClientTests.swift in Sources */,
 				B00000000000000000000213 /* TaskDetailViewModelTests.swift in Sources */,
+				B00000000000000000000214 /* MarkdownLineParserTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

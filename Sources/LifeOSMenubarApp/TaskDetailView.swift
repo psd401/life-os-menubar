@@ -36,13 +36,7 @@ struct TaskDetailView: View {
     VStack(alignment: .leading, spacing: 12) {
       header
 
-      if let errorMessage = viewModel.errorMessage {
-        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-          .font(.caption)
-          .foregroundStyle(.orange)
-          .fixedSize(horizontal: false, vertical: true)
-          .accessibilityLabel("Task error: \(errorMessage)")
-      }
+      errorBanner
 
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 18) {
@@ -61,10 +55,7 @@ struct TaskDetailView: View {
     .padding(16)
     .frame(width: 460, height: 620)
     .task {
-      await viewModel.load(token: token)
-      if viewModel.errorMessage == nil {
-        onIssueUpdated(viewModel.issue)
-      }
+      await loadDetail()
     }
     .confirmationDialog(
       "Close #\(viewModel.issue.number)?",
@@ -82,6 +73,32 @@ struct TaskDetailView: View {
       Button("Cancel", role: .cancel) {}
     } message: {
       Text("This replaces the current status with status:done and closes the issue on GitHub.")
+    }
+  }
+
+  @ViewBuilder
+  private var errorBanner: some View {
+    if let errorMessage = viewModel.errorMessage {
+      HStack(alignment: .firstTextBaseline, spacing: 8) {
+        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+          .font(.caption)
+          .foregroundStyle(.orange)
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityLabel("Task error: \(errorMessage)")
+
+        Spacer()
+
+        if !viewModel.hasLoadedDetail {
+          Button("Retry") {
+            Task {
+              await loadDetail()
+            }
+          }
+          .disabled(viewModel.isLoading)
+          .controlSize(.small)
+          .accessibilityLabel("Retry loading task details")
+        }
+      }
     }
   }
 
@@ -361,6 +378,13 @@ struct TaskDetailView: View {
       $0.title.localizedStandardCompare($1.title) == .orderedAscending
     }
   }
+
+  private func loadDetail() async {
+    await viewModel.load(token: token)
+    if viewModel.errorMessage == nil {
+      onIssueUpdated(viewModel.issue)
+    }
+  }
 }
 
 private struct DetailLabelGroup: Identifiable {
@@ -438,7 +462,7 @@ private struct MarkdownBlockView: View {
         Text("•")
         Text(inlineMarkdown(String(trimmed.dropFirst(2))))
       }
-    } else if let orderedItem = orderedItem(from: trimmed) {
+    } else if let orderedItem = MarkdownLineParser.orderedListItem(from: trimmed) {
       HStack(alignment: .firstTextBaseline, spacing: 7) {
         Text(orderedItem.marker)
           .monospacedDigit()
@@ -471,19 +495,4 @@ private struct MarkdownBlockView: View {
     return (match.1, String(line.dropFirst(match.0.count)))
   }
 
-  private func orderedItem(from line: String) -> (marker: String, text: String)? {
-    guard let separator = line.firstIndex(of: ".") else {
-      return nil
-    }
-    let marker = String(line[...separator])
-    guard Int(line[..<separator]) != nil else {
-      return nil
-    }
-    let textStart = line.index(after: separator)
-    let text = line[textStart...].trimmingCharacters(in: .whitespaces)
-    guard !text.isEmpty else {
-      return nil
-    }
-    return (marker, text)
-  }
 }
