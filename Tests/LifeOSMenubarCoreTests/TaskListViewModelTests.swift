@@ -11,7 +11,8 @@ struct TaskListViewModelTests {
     let cache = ViewModelCacheStore(
       snapshot: IssueCacheSnapshot(
         issues: [cachedIssue],
-        lastSyncedAt: Date(timeIntervalSince1970: 1_785_100_000)
+        lastSyncedAt: Date(timeIntervalSince1970: 1_785_100_000),
+        lastFullSyncedAt: Date(timeIntervalSince1970: 1_785_100_000)
       )
     )
     let client = ViewModelIssueFetcher(result: .success([]))
@@ -30,7 +31,8 @@ struct TaskListViewModelTests {
     let cache = ViewModelCacheStore(
       snapshot: IssueCacheSnapshot(
         issues: [cachedIssue],
-        lastSyncedAt: Date(timeIntervalSince1970: 1_785_100_000)
+        lastSyncedAt: Date(timeIntervalSince1970: 1_785_100_000),
+        lastFullSyncedAt: Date(timeIntervalSince1970: 1_785_100_000)
       )
     )
     let viewModel = TaskListViewModel(

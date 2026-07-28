@@ -24,18 +24,21 @@ struct IssueSyncEngineTests {
     #expect(await client.receivedWatermarks == [nil])
     #expect(snapshot.issues.map(\.number) == [1])
     #expect(snapshot.lastSyncedAt == refreshTime)
+    #expect(snapshot.lastFullSyncedAt == refreshTime)
     #expect(cache.snapshot == snapshot)
   }
 
   @Test
   func deltaRefreshUsesWatermarkMergesUpdatesAndRemovesClosedIssues() async throws {
-    let watermark = Date(timeIntervalSince1970: 1_785_100_000)
+    let watermark = Date(timeIntervalSince1970: 1_785_190_000)
+    let lastFullSync = Date(timeIntervalSince1970: 1_785_150_000)
     let unchangedIssue = syncTestIssue(number: 1, title: "Unchanged")
     let replacedIssue = syncTestIssue(number: 2, title: "Old title")
     let cache = InMemoryIssueCacheStore(
       snapshot: IssueCacheSnapshot(
         issues: [unchangedIssue, replacedIssue],
-        lastSyncedAt: watermark
+        lastSyncedAt: watermark,
+        lastFullSyncedAt: lastFullSync
       )
     )
     let client = IssueFetcherSpy(
@@ -58,13 +61,44 @@ struct IssueSyncEngineTests {
     #expect(snapshot.issues.map(\.number) == [2, 3])
     #expect(snapshot.issues[0].title == "New title")
     #expect(snapshot.lastSyncedAt == refreshTime)
+    #expect(snapshot.lastFullSyncedAt == lastFullSync)
+  }
+
+  @Test
+  func refreshPerformsFullReconciliationAfterTwentyFourHours() async throws {
+    let lastFullSync = Date(timeIntervalSince1970: 1_785_000_000)
+    let lastDeltaSync = Date(timeIntervalSince1970: 1_785_050_000)
+    let refreshTime = lastFullSync.addingTimeInterval((24 * 60 * 60) + 1)
+    let staleIssue = syncTestIssue(number: 1, title: "Stale label")
+    let reconciledIssue = syncTestIssue(number: 2, title: "Current labels")
+    let cache = InMemoryIssueCacheStore(
+      snapshot: IssueCacheSnapshot(
+        issues: [staleIssue],
+        lastSyncedAt: lastDeltaSync,
+        lastFullSyncedAt: lastFullSync
+      )
+    )
+    let client = IssueFetcherSpy(result: .success([reconciledIssue]))
+    let engine = IssueSyncEngine(
+      client: client,
+      cacheStore: cache,
+      now: { refreshTime }
+    )
+
+    let snapshot = try await engine.refresh(token: "token")
+
+    #expect(await client.receivedWatermarks == [nil])
+    #expect(snapshot.issues == [reconciledIssue])
+    #expect(snapshot.lastSyncedAt == refreshTime)
+    #expect(snapshot.lastFullSyncedAt == refreshTime)
   }
 
   @Test
   func failedRefreshLeavesExistingCacheUntouched() async {
     let existing = IssueCacheSnapshot(
       issues: [syncTestIssue(number: 1)],
-      lastSyncedAt: Date(timeIntervalSince1970: 1_785_100_000)
+      lastSyncedAt: Date(timeIntervalSince1970: 1_785_100_000),
+      lastFullSyncedAt: Date(timeIntervalSince1970: 1_785_100_000)
     )
     let cache = InMemoryIssueCacheStore(snapshot: existing)
     let engine = IssueSyncEngine(

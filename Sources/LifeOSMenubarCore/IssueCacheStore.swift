@@ -3,13 +3,23 @@ import Foundation
 public struct IssueCacheSnapshot: Codable, Equatable, Sendable {
   public let issues: [LifeOSIssue]
   public let lastSyncedAt: Date?
+  public let lastFullSyncedAt: Date?
 
-  public init(issues: [LifeOSIssue], lastSyncedAt: Date?) {
+  public init(
+    issues: [LifeOSIssue],
+    lastSyncedAt: Date?,
+    lastFullSyncedAt: Date? = nil
+  ) {
     self.issues = issues
     self.lastSyncedAt = lastSyncedAt
+    self.lastFullSyncedAt = lastFullSyncedAt
   }
 
-  public static let empty = IssueCacheSnapshot(issues: [], lastSyncedAt: nil)
+  public static let empty = IssueCacheSnapshot(
+    issues: [],
+    lastSyncedAt: nil,
+    lastFullSyncedAt: nil
+  )
 }
 
 public protocol IssueCacheStoring: Sendable {

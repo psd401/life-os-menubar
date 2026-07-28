@@ -154,6 +154,108 @@ struct GitHubIssueClientTests {
     }
   }
 
+  @Test
+  func rejectsBlankTokenBeforeStartingARequest() async {
+    await #expect(throws: GitHubIssueClientError.emptyToken) {
+      try await makeClient().fetchIssues(token: " \n ", updatedAfter: nil)
+    }
+  }
+
+  @Test
+  func mapsUnauthorizedResponseToRejectedError() async {
+    GraphQLIssueURLProtocolStub.handler = { request in
+      try graphQLResponse(for: request, statusCode: 401, json: "")
+    }
+
+    await #expect(throws: GitHubIssueClientError.rejected) {
+      try await makeClient().fetchIssues(token: "test-token", updatedAfter: nil)
+    }
+  }
+
+  @Test
+  func preservesNonUnauthorizedHTTPStatus() async {
+    GraphQLIssueURLProtocolStub.handler = { request in
+      try graphQLResponse(for: request, statusCode: 403, json: "")
+    }
+
+    await #expect(throws: GitHubIssueClientError.requestFailed(statusCode: 403)) {
+      try await makeClient().fetchIssues(token: "test-token", updatedAfter: nil)
+    }
+  }
+
+  @Test
+  func surfacesTopLevelGraphQLError() async {
+    GraphQLIssueURLProtocolStub.handler = { request in
+      try graphQLResponse(
+        for: request,
+        json: """
+          {
+            "data": null,
+            "errors": [{"message": "API rate limit exceeded"}]
+          }
+          """
+      )
+    }
+
+    await #expect(
+      throws: GitHubIssueClientError.graphQLError(message: "API rate limit exceeded")
+    ) {
+      try await makeClient().fetchIssues(token: "test-token", updatedAfter: nil)
+    }
+  }
+
+  @Test
+  func rejectsIssueWithInvalidUpdatedAt() async {
+    GraphQLIssueURLProtocolStub.handler = { request in
+      try graphQLResponse(
+        for: request,
+        json: """
+          {
+            "data": {
+              "repository": {
+                "issues": {
+                  "nodes": [{
+                    "number": 41,
+                    "title": "Task",
+                    "body": "",
+                    "updatedAt": "not-a-date",
+                    "state": "OPEN",
+                    "labels": {"nodes": []}
+                  }],
+                  "pageInfo": {"hasNextPage": false, "endCursor": null}
+                }
+              }
+            }
+          }
+          """
+      )
+    }
+
+    await #expect(throws: GitHubIssueClientError.invalidUpdatedAt("not-a-date")) {
+      try await makeClient().fetchIssues(token: "test-token", updatedAfter: nil)
+    }
+  }
+
+  @Test
+  func reportsMissingRepository() async {
+    GraphQLIssueURLProtocolStub.handler = { request in
+      try graphQLResponse(
+        for: request,
+        json: """
+          {
+            "data": {
+              "repository": null
+            }
+          }
+          """
+      )
+    }
+
+    await #expect(throws: GitHubIssueClientError.missingRepository) {
+      try await makeClient().fetchIssues(token: "test-token", updatedAfter: nil)
+    }
+  }
+
   private func makeClient() -> GitHubGraphQLIssueClient {
     let configuration = URLSessionConfiguration.ephemeral
     configuration.protocolClasses = [GraphQLIssueURLProtocolStub.self]
@@ -203,12 +305,13 @@ private func graphQLRequestBody(from request: URLRequest) throws -> Data {
 
 private func graphQLResponse(
   for request: URLRequest,
+  statusCode: Int = 200,
   json: String
 ) throws -> (HTTPURLResponse, Data) {
   let response = try #require(
     HTTPURLResponse(
       url: request.url!,
-      statusCode: 200,
+      statusCode: statusCode,
       httpVersion: nil,
       headerFields: nil
     )

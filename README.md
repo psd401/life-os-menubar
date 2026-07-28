@@ -37,5 +37,7 @@ Tasks are cached at:
 
 The cache is loaded before the panel is shown, so tasks remain available during
 network failures. Successful refreshes use the previous sync watermark to fetch
-only changed issues. Refresh runs when the panel opens, every five minutes while
+only changed issues. A full reconciliation runs at least once every 24 hours so
+repo-wide label renames and other label metadata changes cannot leave the cache
+stale indefinitely. Refresh runs when the panel opens, every five minutes while
 the app is running, or when **Refresh** is selected in the panel.

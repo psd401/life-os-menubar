@@ -25,7 +25,8 @@ struct IssueCacheStoreTests {
           updatedAt: Date(timeIntervalSince1970: 1_785_200_000)
         )
       ],
-      lastSyncedAt: Date(timeIntervalSince1970: 1_785_200_100)
+      lastSyncedAt: Date(timeIntervalSince1970: 1_785_200_100),
+      lastFullSyncedAt: Date(timeIntervalSince1970: 1_785_200_050)
     )
 
     try store.save(snapshot)
@@ -42,6 +43,34 @@ struct IssueCacheStoreTests {
       .appendingPathComponent("missing.json")
 
     #expect(try JSONIssueCacheStore(fileURL: fileURL).load() == nil)
+  }
+
+  @Test
+  func loadsCacheCreatedBeforeFullSyncMetadataWasAdded() throws {
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent("life-os-menubar-issue-3", isDirectory: true)
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    let fileURL = directory.appendingPathComponent("issues.json")
+    defer {
+      try? FileManager.default.removeItem(at: directory)
+    }
+    try FileManager.default.createDirectory(
+      at: directory,
+      withIntermediateDirectories: true
+    )
+    try Data(
+      """
+      {
+        "issues": [],
+        "lastSyncedAt": "2026-07-27T20:00:00Z"
+      }
+      """.utf8
+    ).write(to: fileURL)
+
+    let snapshot = try #require(try JSONIssueCacheStore(fileURL: fileURL).load())
+
+    #expect(snapshot.lastSyncedAt != nil)
+    #expect(snapshot.lastFullSyncedAt == nil)
   }
 
   @Test
