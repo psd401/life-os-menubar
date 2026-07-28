@@ -41,3 +41,19 @@ only changed issues. A full reconciliation runs at least once every 24 hours so
 repo-wide label renames and other label metadata changes cannot leave the cache
 stale indefinitely. Refresh runs when the panel opens, every five minutes while
 the app is running, or when **Refresh** is selected in the panel.
+
+## Filtering
+
+Expand **Filters** beneath the search field to select values from the status,
+priority, area, context, person, energy, estimate, and type label families.
+Values come from labels in the local issue cache. Multiple values in one family
+are combined with OR; selections in different families and the search query are
+combined with AND. **Clear** removes every active filter in one action.
+
+Enter a name and select **Save** to store the current selection. Saved filters
+can be applied or deleted from the **Saved** menu. Active and saved filters are
+restored across app launches from:
+
+```text
+~/Library/Application Support/LifeOSMenubar/filters.json
+```

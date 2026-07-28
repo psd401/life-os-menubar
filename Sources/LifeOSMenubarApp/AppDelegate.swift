@@ -21,7 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       syncEngine: IssueSyncEngine(
         client: GitHubGraphQLIssueClient(),
         cacheStore: cacheStore
-      )
+      ),
+      filterStore: JSONTaskFilterStore()
     )
     let settingsWindowController = SettingsWindowController(viewModel: settingsViewModel)
     let panelController = PanelController(

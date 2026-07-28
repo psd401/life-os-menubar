@@ -18,7 +18,8 @@ struct TaskListViewModelTests {
     let client = ViewModelIssueFetcher(result: .success([]))
     let viewModel = TaskListViewModel(
       cacheStore: cache,
-      syncEngine: IssueSyncEngine(client: client, cacheStore: cache)
+      syncEngine: IssueSyncEngine(client: client, cacheStore: cache),
+      filterStore: ViewModelFilterStore()
     )
 
     #expect(viewModel.issues == [cachedIssue])
@@ -40,7 +41,8 @@ struct TaskListViewModelTests {
       syncEngine: IssueSyncEngine(
         client: ViewModelIssueFetcher(result: .failure(URLError(.notConnectedToInternet))),
         cacheStore: cache
-      )
+      ),
+      filterStore: ViewModelFilterStore()
     )
 
     await viewModel.refresh(token: "token")
@@ -61,7 +63,8 @@ struct TaskListViewModelTests {
         client: ViewModelIssueFetcher(result: .success([fetchedIssue])),
         cacheStore: cache,
         now: { refreshTime }
-      )
+      ),
+      filterStore: ViewModelFilterStore()
     )
 
     await viewModel.refresh(token: "token")
@@ -69,6 +72,81 @@ struct TaskListViewModelTests {
     #expect(viewModel.issues == [fetchedIssue])
     #expect(viewModel.lastSyncedAt == refreshTime)
     #expect(viewModel.errorMessage == nil)
+  }
+
+  @Test
+  func loadsPersistedActiveAndSavedFiltersAtLaunch() {
+    let cache = ViewModelCacheStore()
+    let selection = TaskFilterSelection(
+      labelsByFamily: [.area: ["area:work"]]
+    )
+    let savedFilter = SavedTaskFilter(name: "Work", selection: selection)
+    let filterStore = ViewModelFilterStore(
+      snapshot: TaskFilterStoreSnapshot(
+        activeSelection: selection,
+        savedFilters: [savedFilter]
+      )
+    )
+
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: filterStore
+    )
+
+    #expect(viewModel.activeFilter == selection)
+    #expect(viewModel.savedFilters == [savedFilter])
+  }
+
+  @Test
+  func filterChangesAndSavedFilterLifecyclePersistImmediately() throws {
+    let cache = ViewModelCacheStore(
+      snapshot: IssueCacheSnapshot(
+        issues: [
+          LifeOSIssue(
+            number: 1,
+            title: "Work task",
+            body: "",
+            labels: [
+              GitHubLabel(name: "status:inbox", color: "ffffff"),
+              GitHubLabel(name: "area:work", color: "000000"),
+            ],
+            updatedAt: Date(timeIntervalSince1970: 1_785_000_000)
+          )
+        ],
+        lastSyncedAt: nil
+      )
+    )
+    let filterStore = ViewModelFilterStore()
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: filterStore
+    )
+
+    viewModel.toggleFilter(labelName: "area:work", in: .area)
+    #expect(viewModel.sections.first?.issues.map(\.number) == [1])
+    #expect(try filterStore.load()?.activeSelection == viewModel.activeFilter)
+
+    #expect(viewModel.saveCurrentFilter(named: " Work Focus "))
+    let savedFilter = try #require(viewModel.savedFilters.first)
+    #expect(savedFilter.name == "Work Focus")
+
+    viewModel.clearFilters()
+    #expect(viewModel.activeFilter == .empty)
+
+    viewModel.applySavedFilter(id: savedFilter.id)
+    #expect(viewModel.activeFilter.selectedLabels(for: .area) == ["area:work"])
+
+    viewModel.deleteSavedFilter(id: savedFilter.id)
+    #expect(viewModel.savedFilters.isEmpty)
+    #expect(try filterStore.load()?.savedFilters.isEmpty == true)
   }
 }
 
@@ -111,6 +189,27 @@ private final class ViewModelCacheStore: IssueCacheStoring, @unchecked Sendable 
   }
 
   func save(_ snapshot: IssueCacheSnapshot) throws {
+    lock.withLock {
+      mutableSnapshot = snapshot
+    }
+  }
+}
+
+private final class ViewModelFilterStore: TaskFilterStoring, @unchecked Sendable {
+  private let lock = NSLock()
+  private var mutableSnapshot: TaskFilterStoreSnapshot?
+
+  init(snapshot: TaskFilterStoreSnapshot? = nil) {
+    self.mutableSnapshot = snapshot
+  }
+
+  func load() throws -> TaskFilterStoreSnapshot? {
+    lock.withLock {
+      mutableSnapshot
+    }
+  }
+
+  func save(_ snapshot: TaskFilterStoreSnapshot) throws {
     lock.withLock {
       mutableSnapshot = snapshot
     }

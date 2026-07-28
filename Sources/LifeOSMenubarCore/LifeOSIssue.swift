@@ -82,12 +82,14 @@ public struct TaskSectionSnapshot: Equatable, Identifiable, Sendable {
 public enum TaskListPresentation {
   public static func sections(
     issues: [LifeOSIssue],
-    searchText: String
+    searchText: String,
+    filterSelection: TaskFilterSelection = .empty
   ) -> [TaskSectionSnapshot] {
     let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
     let visibleIssues = issues.filter { issue in
       issue.state == .open
         && (query.isEmpty || issue.title.localizedCaseInsensitiveContains(query))
+        && TaskFilterPredicate.matches(issue: issue, selection: filterSelection)
     }
 
     return TaskStatusSection.allCases.map { status in
