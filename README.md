@@ -22,3 +22,20 @@ xcodebuild test \
 The app runs as an accessory application with no Dock icon. Add a fine-grained
 GitHub personal access token in Settings; it is stored only in the macOS
 Keychain.
+
+## Task sync
+
+The panel reads all open issues from `krishagel/life-os` through GitHub GraphQL
+and groups them into Inbox, Next, Active, Waiting, Scheduled, and Someday.
+Results are searchable by title and sorted by priority, then most-recent update.
+
+Tasks are cached at:
+
+```text
+~/Library/Application Support/LifeOSMenubar/issues.json
+```
+
+The cache is loaded before the panel is shown, so tasks remain available during
+network failures. Successful refreshes use the previous sync watermark to fetch
+only changed issues. Refresh runs when the panel opens, every five minutes while
+the app is running, or when **Refresh** is selected in the panel.

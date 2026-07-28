@@ -3,10 +3,15 @@ import AppKit
 @MainActor
 final class StatusItemController {
   private let panelController: PanelController
+  private let onPanelOpen: () -> Void
   private let statusItem: NSStatusItem
 
-  init(panelController: PanelController) {
+  init(
+    panelController: PanelController,
+    onPanelOpen: @escaping () -> Void
+  ) {
     self.panelController = panelController
+    self.onPanelOpen = onPanelOpen
     self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
     guard let button = statusItem.button else {
@@ -25,6 +30,8 @@ final class StatusItemController {
 
   @objc
   private func togglePanel(_ sender: NSStatusBarButton) {
-    panelController.toggle(anchoredTo: sender)
+    if panelController.toggle(anchoredTo: sender) {
+      onPanelOpen()
+    }
   }
 }
