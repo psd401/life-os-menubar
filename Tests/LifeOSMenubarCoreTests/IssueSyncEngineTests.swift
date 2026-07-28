@@ -112,6 +112,97 @@ struct IssueSyncEngineTests {
     #expect(cache.snapshot == existing)
     #expect(cache.saveCallCount == 0)
   }
+
+  @Test
+  func refreshMergesProjectDatesForEveryOpenCachedIssue() async throws {
+    let watermark = Date(timeIntervalSince1970: 1_785_190_000)
+    let cachedIssue = syncTestIssue(number: 1)
+    let cache = InMemoryIssueCacheStore(
+      snapshot: IssueCacheSnapshot(
+        issues: [cachedIssue],
+        lastSyncedAt: watermark,
+        lastFullSyncedAt: watermark
+      )
+    )
+    let projectFields = ProjectFieldFetchResult(
+      fieldsByIssueNumber: [
+        1: IssueProjectFields(
+          dueDate: ProjectDate(githubDate: "2026-07-28"),
+          deferUntil: ProjectDate(githubDate: "2026-07-27")
+        )
+      ],
+      access: .available
+    )
+    let engine = IssueSyncEngine(
+      client: IssueFetcherSpy(result: .success([])),
+      projectFieldClient: ProjectFieldFetcherStub(result: .success(projectFields)),
+      cacheStore: cache,
+      now: { watermark.addingTimeInterval(60) }
+    )
+
+    let snapshot = try await engine.refresh(token: "token")
+
+    #expect(snapshot.projectFieldAccess == .available)
+    #expect(snapshot.issues[0].dueDate == ProjectDate(githubDate: "2026-07-28"))
+    #expect(snapshot.issues[0].deferUntil == ProjectDate(githubDate: "2026-07-27"))
+  }
+
+  @Test
+  func projectDateChangesApplyEvenWhenIssueDeltaIsEmpty() async throws {
+    let watermark = Date(timeIntervalSince1970: 1_785_190_000)
+    let cachedIssue = LifeOSIssue(
+      number: 1,
+      title: "Task",
+      body: "",
+      labels: [GitHubLabel(name: "status:inbox", color: "ffffff")],
+      updatedAt: watermark,
+      dueDate: ProjectDate(githubDate: "2026-07-29")
+    )
+    let cache = InMemoryIssueCacheStore(
+      snapshot: IssueCacheSnapshot(
+        issues: [cachedIssue],
+        lastSyncedAt: watermark,
+        lastFullSyncedAt: watermark,
+        projectFieldAccess: .available
+      )
+    )
+    let projectFields = ProjectFieldFetchResult(
+      fieldsByIssueNumber: [
+        1: IssueProjectFields(dueDate: ProjectDate(githubDate: "2026-07-28"))
+      ],
+      access: .available
+    )
+    let engine = IssueSyncEngine(
+      client: IssueFetcherSpy(result: .success([])),
+      projectFieldClient: ProjectFieldFetcherStub(result: .success(projectFields)),
+      cacheStore: cache,
+      now: { watermark.addingTimeInterval(60) }
+    )
+
+    let snapshot = try await engine.refresh(token: "token")
+
+    #expect(snapshot.issues[0].dueDate == ProjectDate(githubDate: "2026-07-28"))
+  }
+
+  @Test
+  func missingProjectScopeClearsStaleDatesButKeepsNormalIssueRefreshWorking() async throws {
+    let refreshTime = Date(timeIntervalSince1970: 1_785_200_000)
+    let fetchedIssue = syncTestIssue(number: 1, title: "Fresh title")
+    let cache = InMemoryIssueCacheStore()
+    let engine = IssueSyncEngine(
+      client: IssueFetcherSpy(result: .success([fetchedIssue])),
+      projectFieldClient: ProjectFieldFetcherStub(result: .success(.missingScope)),
+      cacheStore: cache,
+      now: { refreshTime }
+    )
+
+    let snapshot = try await engine.refresh(token: "token")
+
+    #expect(snapshot.issues.map(\.title) == ["Fresh title"])
+    #expect(snapshot.issues[0].dueDate == nil)
+    #expect(snapshot.projectFieldAccess == .missingScope)
+    #expect(cache.snapshot == snapshot)
+  }
 }
 
 private func syncTestIssue(
@@ -144,6 +235,22 @@ private actor IssueFetcherSpy: GitHubIssueFetching {
   func fetchIssues(token: String, updatedAfter: Date?) async throws -> [LifeOSIssue] {
     receivedWatermarks.append(updatedAfter)
     return try result.get()
+  }
+}
+
+private actor ProjectFieldFetcherStub: GitHubProjectFieldFetching {
+  enum StubError: Error {
+    case network
+  }
+
+  private let result: Result<ProjectFieldFetchResult, StubError>
+
+  init(result: Result<ProjectFieldFetchResult, StubError>) {
+    self.result = result
+  }
+
+  func fetchProjectFields(token: String) async throws -> ProjectFieldFetchResult {
+    try result.get()
   }
 }
 

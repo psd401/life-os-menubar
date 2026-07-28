@@ -22,11 +22,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       cacheStore: cacheStore,
       syncEngine: IssueSyncEngine(
         client: GitHubGraphQLIssueClient(),
+        projectFieldClient: GitHubGraphQLProjectFieldClient(),
         cacheStore: cacheStore
       ),
       filterStore: JSONTaskFilterStore()
     )
-    let settingsWindowController = SettingsWindowController(viewModel: settingsViewModel)
+    let settingsWindowController = SettingsWindowController(
+      viewModel: settingsViewModel,
+      taskListViewModel: taskListViewModel
+    )
     let quickCaptureWindowController = QuickCaptureWindowController(
       viewModel: QuickCaptureViewModel(client: GitHubRESTIssueClient()),
       tokenProvider: {
@@ -57,6 +61,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     self.taskListViewModel = taskListViewModel
     self.statusItemController = StatusItemController(
       panelController: panelController,
+      taskListViewModel: taskListViewModel,
+      settingsViewModel: settingsViewModel,
       onPanelOpen: {
         Task {
           await taskListViewModel.refresh(token: settingsViewModel.token)

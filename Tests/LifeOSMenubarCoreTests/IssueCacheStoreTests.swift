@@ -22,11 +22,14 @@ struct IssueCacheStoreTests {
           title: "Cached task",
           body: "Cached body",
           labels: [GitHubLabel(name: "status:active", color: "123456")],
-          updatedAt: Date(timeIntervalSince1970: 1_785_200_000)
+          updatedAt: Date(timeIntervalSince1970: 1_785_200_000),
+          dueDate: ProjectDate(githubDate: "2026-07-28"),
+          deferUntil: ProjectDate(githubDate: "2026-07-27")
         )
       ],
       lastSyncedAt: Date(timeIntervalSince1970: 1_785_200_100),
-      lastFullSyncedAt: Date(timeIntervalSince1970: 1_785_200_050)
+      lastFullSyncedAt: Date(timeIntervalSince1970: 1_785_200_050),
+      projectFieldAccess: .available
     )
 
     try store.save(snapshot)
@@ -61,7 +64,14 @@ struct IssueCacheStoreTests {
     try Data(
       """
       {
-        "issues": [],
+        "issues": [{
+          "number": 7,
+          "title": "Legacy cached task",
+          "body": "",
+          "labels": [],
+          "updatedAt": "2026-07-27T19:00:00Z",
+          "state": "OPEN"
+        }],
         "lastSyncedAt": "2026-07-27T20:00:00Z"
       }
       """.utf8
@@ -71,6 +81,9 @@ struct IssueCacheStoreTests {
 
     #expect(snapshot.lastSyncedAt != nil)
     #expect(snapshot.lastFullSyncedAt == nil)
+    #expect(snapshot.projectFieldAccess == .unknown)
+    #expect(snapshot.issues.first?.dueDate == nil)
+    #expect(snapshot.issues.first?.deferUntil == nil)
   }
 
   @Test

@@ -35,7 +35,7 @@ public final class TaskDetailViewModel: ObservableObject {
 
     do {
       let detail = try await detailClient.fetchIssueDetail(token: token, number: issue.number)
-      issue = detail.issue
+      issue = detail.issue.preservingProjectFields(from: issue)
       comments = detail.comments
       hasLoadedDetail = true
       errorMessage = nil
@@ -172,9 +172,9 @@ public final class TaskDetailViewModel: ObservableObject {
         labels: labels,
         state: state
       )
-      issue = updatedIssue
+      issue = updatedIssue.preservingProjectFields(from: issue)
       errorMessage = nil
-      return updatedIssue
+      return issue
     } catch {
       errorMessage = error.localizedDescription
       return nil

@@ -6,15 +6,23 @@ import SwiftUI
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
   private var promotedActivationPolicy = false
 
-  init(viewModel: SettingsViewModel) {
+  init(
+    viewModel: SettingsViewModel,
+    taskListViewModel: TaskListViewModel
+  ) {
     let window = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 520, height: 350),
+      contentRect: NSRect(x: 0, y: 0, width: 520, height: 430),
       styleMask: [.titled, .closable, .miniaturizable],
       backing: .buffered,
       defer: false
     )
     window.title = "Life OS Menubar Settings"
-    window.contentView = NSHostingView(rootView: SettingsView(viewModel: viewModel))
+    window.contentView = NSHostingView(
+      rootView: SettingsView(
+        viewModel: viewModel,
+        taskListViewModel: taskListViewModel
+      )
+    )
     window.center()
     window.isReleasedWhenClosed = false
 

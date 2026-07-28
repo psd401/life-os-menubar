@@ -80,3 +80,18 @@ and optionally override the default P2 priority. Creating a task writes it to
 `krishagel/life-os` with `status:inbox`, `type:task`, `source:manual`, and the
 selected `priority:*` label. Failed requests keep the draft intact so they can
 be retried; Escape cancels and clears the draft.
+
+## Today and Project fields
+
+Each sync reads the **Due Date** and **Defer Until** date fields from the GitHub
+Project v2 items attached to open tasks. The **Today** view includes tasks due
+today or overdue, except tasks deferred until a later date. Project fields are
+read-only: the app does not send Project v2 mutations.
+
+Project date access requires the GitHub `read:project` scope. If the saved token
+does not have that scope, normal task sync, filtering, detail actions, and quick
+capture continue to work. The panel and Settings show a remediation message
+until a token with `read:project` is saved.
+
+The menu bar icon shows the unfiltered Today task count after each successful
+sync. The badge can be disabled under **Settings → General**.

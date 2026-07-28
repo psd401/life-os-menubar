@@ -106,15 +106,30 @@ struct SettingsViewModelTests {
     #expect(viewModel.isLaunchAtLoginEnabled)
   }
 
+  @Test
+  func loadsAndPersistsTodayBadgePreference() {
+    let badgeStore = BadgePreferenceStoreSpy(isEnabled: false)
+    let viewModel = makeViewModel(badgeStore: badgeStore)
+
+    #expect(!viewModel.isTodayBadgeEnabled)
+
+    viewModel.setTodayBadgeEnabled(true)
+
+    #expect(viewModel.isTodayBadgeEnabled)
+    #expect(badgeStore.savedValues == [true])
+  }
+
   private func makeViewModel(
     tokenStore: TokenStoreSpy = TokenStoreSpy(),
     validator: any GitHubTokenValidating = TokenValidatorStub(result: .success("octocat")),
-    launchController: LaunchAtLoginControllerSpy = LaunchAtLoginControllerSpy()
+    launchController: LaunchAtLoginControllerSpy = LaunchAtLoginControllerSpy(),
+    badgeStore: BadgePreferenceStoreSpy = BadgePreferenceStoreSpy()
   ) -> SettingsViewModel {
     SettingsViewModel(
       tokenStore: tokenStore,
       validator: validator,
-      launchAtLoginController: launchController
+      launchAtLoginController: launchController,
+      badgePreferenceStore: badgeStore
     )
   }
 }
@@ -204,6 +219,35 @@ private actor ControlledTokenValidator: GitHubTokenValidating {
 private struct ValidationStubError: LocalizedError {
   var errorDescription: String? {
     "Validation failed."
+  }
+}
+
+private final class BadgePreferenceStoreSpy: TodayBadgePreferenceStoring, @unchecked Sendable {
+  private let lock = NSLock()
+  private var isEnabled: Bool
+  private var mutableSavedValues: [Bool] = []
+
+  init(isEnabled: Bool = true) {
+    self.isEnabled = isEnabled
+  }
+
+  var savedValues: [Bool] {
+    lock.withLock {
+      mutableSavedValues
+    }
+  }
+
+  func loadIsEnabled() throws -> Bool {
+    lock.withLock {
+      isEnabled
+    }
+  }
+
+  func saveIsEnabled(_ isEnabled: Bool) throws {
+    lock.withLock {
+      self.isEnabled = isEnabled
+      mutableSavedValues.append(isEnabled)
+    }
   }
 }
 

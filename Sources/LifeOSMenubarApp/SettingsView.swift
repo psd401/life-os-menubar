@@ -4,6 +4,7 @@ import SwiftUI
 
 struct SettingsView: View {
   @ObservedObject var viewModel: SettingsViewModel
+  @ObservedObject var taskListViewModel: TaskListViewModel
 
   var body: some View {
     Form {
@@ -38,12 +39,36 @@ struct SettingsView: View {
         Text("The token is stored only in your macOS Keychain.")
           .font(.caption)
           .foregroundStyle(.secondary)
+
+        if taskListViewModel.projectFieldAccess == .missingScope {
+          Label(
+            "Today and project dates need read:project access. "
+              + "Re-run sign-in or replace this token with one that grants read:project; "
+              + "all other features continue to work.",
+            systemImage: "calendar.badge.exclamationmark"
+          )
+          .font(.caption)
+          .foregroundStyle(.orange)
+          .fixedSize(horizontal: false, vertical: true)
+        }
       }
 
       Section("General") {
         KeyboardShortcuts.Recorder(
           "Quick capture shortcut",
           name: .quickCapture
+        )
+
+        Toggle(
+          "Show Today count in the menu bar",
+          isOn: Binding(
+            get: {
+              viewModel.isTodayBadgeEnabled
+            },
+            set: { newValue in
+              viewModel.setTodayBadgeEnabled(newValue)
+            }
+          )
         )
 
         Toggle(
@@ -62,11 +87,16 @@ struct SettingsView: View {
           Label(launchAtLoginError, systemImage: "exclamationmark.triangle.fill")
             .foregroundStyle(.red)
         }
+
+        if let badgePreferenceError = viewModel.badgePreferenceError {
+          Label(badgePreferenceError, systemImage: "exclamationmark.triangle.fill")
+            .foregroundStyle(.red)
+        }
       }
     }
     .formStyle(.grouped)
     .padding()
-    .frame(width: 520, height: 350)
+    .frame(width: 520, height: 430)
   }
 
   @ViewBuilder

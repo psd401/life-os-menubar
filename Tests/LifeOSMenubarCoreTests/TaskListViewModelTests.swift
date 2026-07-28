@@ -75,6 +75,53 @@ struct TaskListViewModelTests {
   }
 
   @Test
+  func exposesCachedTodayCountAndProjectAccess() throws {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = try #require(TimeZone(identifier: "America/Los_Angeles"))
+    let now = try #require(
+      ISO8601DateFormatter().date(from: "2026-07-28T19:00:00Z")
+    )
+    let dueToday = LifeOSIssue(
+      number: 1,
+      title: "Due today",
+      body: "",
+      labels: [GitHubLabel(name: "status:inbox", color: "ffffff")],
+      updatedAt: now,
+      dueDate: ProjectDate(githubDate: "2026-07-28")
+    )
+    let deferred = LifeOSIssue(
+      number: 2,
+      title: "Deferred",
+      body: "",
+      labels: [GitHubLabel(name: "status:inbox", color: "ffffff")],
+      updatedAt: now,
+      dueDate: ProjectDate(githubDate: "2026-07-27"),
+      deferUntil: ProjectDate(githubDate: "2026-07-29")
+    )
+    let cache = ViewModelCacheStore(
+      snapshot: IssueCacheSnapshot(
+        issues: [dueToday, deferred],
+        lastSyncedAt: now,
+        projectFieldAccess: .available
+      )
+    )
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: ViewModelFilterStore(),
+      now: { now },
+      calendar: calendar
+    )
+
+    #expect(viewModel.projectFieldAccess == .available)
+    #expect(viewModel.todayCount == 1)
+    #expect(viewModel.todayIssues.map(\.number) == [1])
+  }
+
+  @Test
   func loadsPersistedActiveAndSavedFiltersAtLaunch() {
     let cache = ViewModelCacheStore()
     let selection = TaskFilterSelection(
@@ -151,7 +198,14 @@ struct TaskListViewModelTests {
 
   @Test
   func reconcilesSuccessfulRemoteUpdateIntoVisibleListAndCache() throws {
-    let original = viewModelTestIssue(number: 10)
+    let original = LifeOSIssue(
+      number: 10,
+      title: "Cached task",
+      body: "",
+      labels: [GitHubLabel(name: "status:inbox", color: "ffffff")],
+      updatedAt: Date(timeIntervalSince1970: 100),
+      dueDate: ProjectDate(githubDate: "2026-07-28")
+    )
     let snapshot = IssueCacheSnapshot(
       issues: [original],
       lastSyncedAt: Date(timeIntervalSince1970: 100),
@@ -179,10 +233,11 @@ struct TaskListViewModelTests {
 
     viewModel.reconcileRemoteIssue(updated)
 
-    #expect(viewModel.issues == [updated])
+    #expect(viewModel.issues == [updated.preservingProjectFields(from: original)])
+    #expect(viewModel.issues[0].dueDate == original.dueDate)
     let loadedSnapshot = try cache.load()
     let saved = try #require(loadedSnapshot)
-    #expect(saved.issues == [updated])
+    #expect(saved.issues == [updated.preservingProjectFields(from: original)])
     #expect(saved.lastSyncedAt == snapshot.lastSyncedAt)
     #expect(saved.lastFullSyncedAt == snapshot.lastFullSyncedAt)
   }

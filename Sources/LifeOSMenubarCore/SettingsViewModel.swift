@@ -13,22 +13,28 @@ public final class SettingsViewModel: ObservableObject {
   @Published public var token: String
   @Published public private(set) var validationState: TokenValidationState = .idle
   @Published public private(set) var isLaunchAtLoginEnabled: Bool
+  @Published public private(set) var isTodayBadgeEnabled: Bool
   @Published public private(set) var persistenceError: String?
   @Published public private(set) var launchAtLoginError: String?
+  @Published public private(set) var badgePreferenceError: String?
 
   private let tokenStore: any TokenStoring
   private let validator: any GitHubTokenValidating
   private let launchAtLoginController: any LaunchAtLoginControlling
+  private let badgePreferenceStore: any TodayBadgePreferenceStoring
   private var validationGeneration = 0
 
   public init(
     tokenStore: any TokenStoring,
     validator: any GitHubTokenValidating,
-    launchAtLoginController: any LaunchAtLoginControlling
+    launchAtLoginController: any LaunchAtLoginControlling,
+    badgePreferenceStore: any TodayBadgePreferenceStoring =
+      UserDefaultsTodayBadgePreferenceStore()
   ) {
     self.tokenStore = tokenStore
     self.validator = validator
     self.launchAtLoginController = launchAtLoginController
+    self.badgePreferenceStore = badgePreferenceStore
     self.isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
 
     do {
@@ -36,6 +42,13 @@ public final class SettingsViewModel: ObservableObject {
     } catch {
       self.token = ""
       self.persistenceError = error.localizedDescription
+    }
+
+    do {
+      self.isTodayBadgeEnabled = try badgePreferenceStore.loadIsEnabled()
+    } catch {
+      self.isTodayBadgeEnabled = true
+      self.badgePreferenceError = error.localizedDescription
     }
   }
 
@@ -113,6 +126,16 @@ public final class SettingsViewModel: ObservableObject {
     } catch {
       isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
       launchAtLoginError = error.localizedDescription
+    }
+  }
+
+  public func setTodayBadgeEnabled(_ isEnabled: Bool) {
+    do {
+      try badgePreferenceStore.saveIsEnabled(isEnabled)
+      isTodayBadgeEnabled = isEnabled
+      badgePreferenceError = nil
+    } catch {
+      badgePreferenceError = error.localizedDescription
     }
   }
 }
