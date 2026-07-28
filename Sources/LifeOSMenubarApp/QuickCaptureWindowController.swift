@@ -27,7 +27,7 @@ final class QuickCaptureWindowController: NSWindowController, NSWindowDelegate {
     window.center()
     window.isReleasedWhenClosed = false
     window.level = .floating
-    window.collectionBehavior = [.moveToActiveSpace]
+    window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
 
     super.init(window: window)
     window.delegate = self
@@ -69,6 +69,10 @@ final class QuickCaptureWindowController: NSWindowController, NSWindowDelegate {
 
   func windowWillClose(_ notification: Notification) {
     viewModel.cancel()
+  }
+
+  func windowShouldClose(_ sender: NSWindow) -> Bool {
+    !viewModel.isSubmitting
   }
 
   private func cancelCapture() {
