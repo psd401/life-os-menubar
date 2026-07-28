@@ -148,6 +148,76 @@ struct TaskListViewModelTests {
     #expect(viewModel.savedFilters.isEmpty)
     #expect(try filterStore.load()?.savedFilters.isEmpty == true)
   }
+
+  @Test
+  func reconcilesSuccessfulRemoteUpdateIntoVisibleListAndCache() throws {
+    let original = viewModelTestIssue(number: 10)
+    let snapshot = IssueCacheSnapshot(
+      issues: [original],
+      lastSyncedAt: Date(timeIntervalSince1970: 100),
+      lastFullSyncedAt: Date(timeIntervalSince1970: 50)
+    )
+    let cache = ViewModelCacheStore(snapshot: snapshot)
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: ViewModelFilterStore()
+    )
+    let updated = LifeOSIssue(
+      number: 10,
+      title: "Updated task",
+      body: "New body",
+      labels: [
+        GitHubLabel(name: "status:active", color: "ffffff"),
+        GitHubLabel(name: "priority:p1", color: "000000"),
+      ],
+      updatedAt: Date(timeIntervalSince1970: 200)
+    )
+
+    viewModel.reconcileRemoteIssue(updated)
+
+    #expect(viewModel.issues == [updated])
+    let loadedSnapshot = try cache.load()
+    let saved = try #require(loadedSnapshot)
+    #expect(saved.issues == [updated])
+    #expect(saved.lastSyncedAt == snapshot.lastSyncedAt)
+    #expect(saved.lastFullSyncedAt == snapshot.lastFullSyncedAt)
+  }
+
+  @Test
+  func removesSuccessfullyClosedIssueFromVisibleListAndCache() throws {
+    let original = viewModelTestIssue(number: 11)
+    let cache = ViewModelCacheStore(
+      snapshot: IssueCacheSnapshot(issues: [original], lastSyncedAt: nil)
+    )
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: ViewModelFilterStore()
+    )
+    let closed = LifeOSIssue(
+      number: original.number,
+      title: original.title,
+      body: original.body,
+      labels: [
+        GitHubLabel(name: "status:done", color: "ffffff"),
+        GitHubLabel(name: "priority:p2", color: "000000"),
+      ],
+      updatedAt: Date(timeIntervalSince1970: 200),
+      state: .closed
+    )
+
+    viewModel.reconcileRemoteIssue(closed)
+
+    #expect(viewModel.issues.isEmpty)
+    #expect(try cache.load()?.issues.isEmpty == true)
+  }
 }
 
 private func viewModelTestIssue(number: Int) -> LifeOSIssue {
