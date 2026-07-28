@@ -11,6 +11,11 @@
 		B00000000000000000000002 /* KeychainTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000002 /* KeychainTokenStore.swift */; };
 		B00000000000000000000003 /* LaunchAtLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000003 /* LaunchAtLoginController.swift */; };
 		B00000000000000000000004 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000004 /* SettingsViewModel.swift */; };
+		B00000000000000000000005 /* LifeOSIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000005 /* LifeOSIssue.swift */; };
+		B00000000000000000000006 /* GitHubIssueClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000006 /* GitHubIssueClient.swift */; };
+		B00000000000000000000007 /* IssueCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000007 /* IssueCacheStore.swift */; };
+		B00000000000000000000008 /* IssueSyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000008 /* IssueSyncEngine.swift */; };
+		B00000000000000000000009 /* TaskListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000009 /* TaskListViewModel.swift */; };
 		B00000000000000000000101 /* LifeOSMenubarMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000101 /* LifeOSMenubarMain.swift */; };
 		B00000000000000000000102 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000102 /* AppDelegate.swift */; };
 		B00000000000000000000103 /* PanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000103 /* PanelController.swift */; };
@@ -20,6 +25,11 @@
 		B00000000000000000000107 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000107 /* StatusItemController.swift */; };
 		B00000000000000000000201 /* GitHubTokenValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000201 /* GitHubTokenValidatorTests.swift */; };
 		B00000000000000000000202 /* SettingsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000202 /* SettingsViewModelTests.swift */; };
+		B00000000000000000000203 /* GitHubIssueClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000203 /* GitHubIssueClientTests.swift */; };
+		B00000000000000000000204 /* IssueCacheStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000204 /* IssueCacheStoreTests.swift */; };
+		B00000000000000000000205 /* IssueSyncEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000205 /* IssueSyncEngineTests.swift */; };
+		B00000000000000000000206 /* TaskListPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000206 /* TaskListPresentationTests.swift */; };
+		B00000000000000000000207 /* TaskListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000207 /* TaskListViewModelTests.swift */; };
 		B00000000000000000000401 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
 		B00000000000000000000402 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
 /* End PBXBuildFile section */
@@ -46,6 +56,11 @@
 		F00000000000000000000002 /* KeychainTokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainTokenStore.swift; sourceTree = "<group>"; };
 		F00000000000000000000003 /* LaunchAtLoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginController.swift; sourceTree = "<group>"; };
 		F00000000000000000000004 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		F00000000000000000000005 /* LifeOSIssue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeOSIssue.swift; sourceTree = "<group>"; };
+		F00000000000000000000006 /* GitHubIssueClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueClient.swift; sourceTree = "<group>"; };
+		F00000000000000000000007 /* IssueCacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueCacheStore.swift; sourceTree = "<group>"; };
+		F00000000000000000000008 /* IssueSyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueSyncEngine.swift; sourceTree = "<group>"; };
+		F00000000000000000000009 /* TaskListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListViewModel.swift; sourceTree = "<group>"; };
 		F00000000000000000000101 /* LifeOSMenubarMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeOSMenubarMain.swift; sourceTree = "<group>"; };
 		F00000000000000000000102 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F00000000000000000000103 /* PanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelController.swift; sourceTree = "<group>"; };
@@ -55,6 +70,11 @@
 		F00000000000000000000107 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
 		F00000000000000000000201 /* GitHubTokenValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubTokenValidatorTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000202 /* SettingsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModelTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000203 /* GitHubIssueClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueClientTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000204 /* IssueCacheStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueCacheStoreTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000205 /* IssueSyncEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueSyncEngineTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000206 /* TaskListPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListPresentationTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000207 /* TaskListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListViewModelTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000301 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F00000000000000000000401 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		F00000000000000000000402 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -118,6 +138,11 @@
 				F00000000000000000000002 /* KeychainTokenStore.swift */,
 				F00000000000000000000003 /* LaunchAtLoginController.swift */,
 				F00000000000000000000004 /* SettingsViewModel.swift */,
+				F00000000000000000000005 /* LifeOSIssue.swift */,
+				F00000000000000000000006 /* GitHubIssueClient.swift */,
+				F00000000000000000000007 /* IssueCacheStore.swift */,
+				F00000000000000000000008 /* IssueSyncEngine.swift */,
+				F00000000000000000000009 /* TaskListViewModel.swift */,
 			);
 			path = LifeOSMenubarCore;
 			sourceTree = "<group>";
@@ -149,6 +174,11 @@
 			children = (
 				F00000000000000000000201 /* GitHubTokenValidatorTests.swift */,
 				F00000000000000000000202 /* SettingsViewModelTests.swift */,
+				F00000000000000000000203 /* GitHubIssueClientTests.swift */,
+				F00000000000000000000204 /* IssueCacheStoreTests.swift */,
+				F00000000000000000000205 /* IssueSyncEngineTests.swift */,
+				F00000000000000000000206 /* TaskListPresentationTests.swift */,
+				F00000000000000000000207 /* TaskListViewModelTests.swift */,
 			);
 			path = LifeOSMenubarCoreTests;
 			sourceTree = "<group>";
@@ -299,6 +329,11 @@
 				B00000000000000000000002 /* KeychainTokenStore.swift in Sources */,
 				B00000000000000000000003 /* LaunchAtLoginController.swift in Sources */,
 				B00000000000000000000004 /* SettingsViewModel.swift in Sources */,
+				B00000000000000000000005 /* LifeOSIssue.swift in Sources */,
+				B00000000000000000000006 /* GitHubIssueClient.swift in Sources */,
+				B00000000000000000000007 /* IssueCacheStore.swift in Sources */,
+				B00000000000000000000008 /* IssueSyncEngine.swift in Sources */,
+				B00000000000000000000009 /* TaskListViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -308,6 +343,11 @@
 			files = (
 				B00000000000000000000201 /* GitHubTokenValidatorTests.swift in Sources */,
 				B00000000000000000000202 /* SettingsViewModelTests.swift in Sources */,
+				B00000000000000000000203 /* GitHubIssueClientTests.swift in Sources */,
+				B00000000000000000000204 /* IssueCacheStoreTests.swift in Sources */,
+				B00000000000000000000205 /* IssueSyncEngineTests.swift in Sources */,
+				B00000000000000000000206 /* TaskListPresentationTests.swift in Sources */,
+				B00000000000000000000207 /* TaskListViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

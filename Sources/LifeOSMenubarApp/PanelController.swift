@@ -7,7 +7,7 @@ final class PanelController {
 
   init<Content: View>(rootView: Content) {
     let panel = StatusPanel(
-      contentRect: NSRect(x: 0, y: 0, width: 320, height: 180),
+      contentRect: NSRect(x: 0, y: 0, width: 460, height: 620),
       styleMask: [.nonactivatingPanel, .fullSizeContentView],
       backing: .buffered,
       defer: false
@@ -23,11 +23,14 @@ final class PanelController {
     self.panel = panel
   }
 
-  func toggle(anchoredTo button: NSStatusBarButton) {
+  @discardableResult
+  func toggle(anchoredTo button: NSStatusBarButton) -> Bool {
     if panel.isVisible {
       panel.orderOut(nil)
+      return false
     } else {
       show(anchoredTo: button)
+      return true
     }
   }
 
