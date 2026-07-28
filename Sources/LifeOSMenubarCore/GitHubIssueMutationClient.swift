@@ -10,9 +10,19 @@ public protocol GitHubIssueMutating: Sendable {
   ) async throws -> LifeOSIssue
 }
 
+public protocol GitHubIssueCreating: Sendable {
+  func createIssue(
+    token: String,
+    title: String,
+    body: String,
+    labels: [String]
+  ) async throws -> LifeOSIssue
+}
+
 public enum GitHubIssueMutationClientError: LocalizedError, Equatable, Sendable {
   case emptyToken
   case emptyComment
+  case emptyTitle
   case invalidResponse
   case rejected
   case requestFailed(statusCode: Int)
@@ -25,6 +35,8 @@ public enum GitHubIssueMutationClientError: LocalizedError, Equatable, Sendable 
       "Add a GitHub token in Settings before changing a task."
     case .emptyComment:
       "Enter a comment before posting."
+    case .emptyTitle:
+      "Enter a title before creating the task."
     case .invalidResponse:
       "GitHub returned an invalid mutation response."
     case .rejected:
@@ -39,7 +51,7 @@ public enum GitHubIssueMutationClientError: LocalizedError, Equatable, Sendable 
   }
 }
 
-public struct GitHubRESTIssueClient: GitHubIssueMutating {
+public struct GitHubRESTIssueClient: GitHubIssueCreating, GitHubIssueMutating {
   private let session: URLSession
   private let endpoint: URL
   private let owner: String
@@ -93,6 +105,33 @@ public struct GitHubRESTIssueClient: GitHubIssueMutating {
       UpdateIssueRequest(
         labels: labels,
         state: state.map { $0 == .open ? "open" : "closed" }
+      )
+    )
+    let response: IssueResponse = try await perform(request)
+    return try Self.makeIssue(from: response)
+  }
+
+  public func createIssue(
+    token: String,
+    title: String,
+    body: String,
+    labels: [String]
+  ) async throws -> LifeOSIssue {
+    let candidateTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !candidateTitle.isEmpty else {
+      throw GitHubIssueMutationClientError.emptyTitle
+    }
+    let candidateBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+    var request = try makeRequest(
+      token: token,
+      pathComponents: ["repos", owner, repository, "issues"],
+      method: "POST"
+    )
+    request.httpBody = try JSONEncoder().encode(
+      CreateIssueRequest(
+        title: candidateTitle,
+        body: candidateBody.isEmpty ? nil : candidateBody,
+        labels: labels
       )
     )
     let response: IssueResponse = try await perform(request)
@@ -189,6 +228,12 @@ private struct CommentRequest: Encodable {
 private struct UpdateIssueRequest: Encodable {
   let labels: [String]
   let state: String?
+}
+
+private struct CreateIssueRequest: Encodable {
+  let title: String
+  let body: String?
+  let labels: [String]
 }
 
 private struct CommentResponse: Decodable {

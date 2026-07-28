@@ -71,3 +71,12 @@ Status and priority changes always normalize labels to exactly one
 `status:inbox` and `priority:p2`. Closing sends `status:done`, the complete
 normalized label set, and the closed state in one request. Local list and cache
 state are updated only after GitHub accepts a mutation.
+
+## Quick capture
+
+Choose a global shortcut in Settings, then use it from any app to open the
+keyboard-focused Quick Capture window. Enter a required title, optional notes,
+and optionally override the default P2 priority. Creating a task writes it to
+`krishagel/life-os` with `status:inbox`, `type:task`, `source:manual`, and the
+selected `priority:*` label. Failed requests keep the draft intact so they can
+be retried; Escape cancels and clears the draft.

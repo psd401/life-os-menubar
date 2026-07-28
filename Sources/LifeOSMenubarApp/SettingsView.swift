@@ -1,3 +1,4 @@
+import KeyboardShortcuts
 import LifeOSMenubarCore
 import SwiftUI
 
@@ -40,6 +41,11 @@ struct SettingsView: View {
       }
 
       Section("General") {
+        KeyboardShortcuts.Recorder(
+          "Quick capture shortcut",
+          name: .quickCapture
+        )
+
         Toggle(
           "Launch Life OS Menubar at login",
           isOn: Binding(
@@ -60,7 +66,7 @@ struct SettingsView: View {
     }
     .formStyle(.grouped)
     .padding()
-    .frame(width: 520, height: 310)
+    .frame(width: 520, height: 350)
   }
 
   @ViewBuilder

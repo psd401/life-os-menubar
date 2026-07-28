@@ -23,6 +23,7 @@
 		B00000000000000000000014 /* GitHubIssueDetailClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000014 /* GitHubIssueDetailClient.swift */; };
 		B00000000000000000000015 /* GitHubIssueMutationClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000015 /* GitHubIssueMutationClient.swift */; };
 		B00000000000000000000016 /* TaskDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000016 /* TaskDetailViewModel.swift */; };
+		B00000000000000000000017 /* QuickCaptureViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000017 /* QuickCaptureViewModel.swift */; };
 		B00000000000000000000101 /* LifeOSMenubarMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000101 /* LifeOSMenubarMain.swift */; };
 		B00000000000000000000102 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000102 /* AppDelegate.swift */; };
 		B00000000000000000000103 /* PanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000103 /* PanelController.swift */; };
@@ -31,6 +32,9 @@
 		B00000000000000000000106 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000106 /* SettingsWindowController.swift */; };
 		B00000000000000000000107 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000107 /* StatusItemController.swift */; };
 		B00000000000000000000108 /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000108 /* TaskDetailView.swift */; };
+		B00000000000000000000109 /* KeyboardShortcutsNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000109 /* KeyboardShortcutsNames.swift */; };
+		B00000000000000000000110 /* QuickCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000110 /* QuickCaptureView.swift */; };
+		B00000000000000000000111 /* QuickCaptureWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000111 /* QuickCaptureWindowController.swift */; };
 		B00000000000000000000201 /* GitHubTokenValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000201 /* GitHubTokenValidatorTests.swift */; };
 		B00000000000000000000202 /* SettingsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000202 /* SettingsViewModelTests.swift */; };
 		B00000000000000000000203 /* GitHubIssueClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000203 /* GitHubIssueClientTests.swift */; };
@@ -45,8 +49,10 @@
 		B00000000000000000000212 /* GitHubIssueMutationClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000212 /* GitHubIssueMutationClientTests.swift */; };
 		B00000000000000000000213 /* TaskDetailViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000213 /* TaskDetailViewModelTests.swift */; };
 		B00000000000000000000214 /* MarkdownLineParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000214 /* MarkdownLineParserTests.swift */; };
+		B00000000000000000000215 /* QuickCaptureViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000215 /* QuickCaptureViewModelTests.swift */; };
 		B00000000000000000000401 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
 		B00000000000000000000402 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
+		B00000000000000000000403 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = K00000000000000000000001 /* KeyboardShortcuts */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -83,6 +89,7 @@
 		F00000000000000000000014 /* GitHubIssueDetailClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueDetailClient.swift; sourceTree = "<group>"; };
 		F00000000000000000000015 /* GitHubIssueMutationClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueMutationClient.swift; sourceTree = "<group>"; };
 		F00000000000000000000016 /* TaskDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailViewModel.swift; sourceTree = "<group>"; };
+		F00000000000000000000017 /* QuickCaptureViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureViewModel.swift; sourceTree = "<group>"; };
 		F00000000000000000000101 /* LifeOSMenubarMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeOSMenubarMain.swift; sourceTree = "<group>"; };
 		F00000000000000000000102 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F00000000000000000000103 /* PanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelController.swift; sourceTree = "<group>"; };
@@ -91,6 +98,9 @@
 		F00000000000000000000106 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		F00000000000000000000107 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
 		F00000000000000000000108 /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
+		F00000000000000000000109 /* KeyboardShortcutsNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsNames.swift; sourceTree = "<group>"; };
+		F00000000000000000000110 /* QuickCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureView.swift; sourceTree = "<group>"; };
+		F00000000000000000000111 /* QuickCaptureWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureWindowController.swift; sourceTree = "<group>"; };
 		F00000000000000000000201 /* GitHubTokenValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubTokenValidatorTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000202 /* SettingsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModelTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000203 /* GitHubIssueClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueClientTests.swift; sourceTree = "<group>"; };
@@ -105,6 +115,7 @@
 		F00000000000000000000212 /* GitHubIssueMutationClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueMutationClientTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000213 /* TaskDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailViewModelTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000214 /* MarkdownLineParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownLineParserTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000215 /* QuickCaptureViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureViewModelTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000301 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F00000000000000000000401 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		F00000000000000000000402 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -119,6 +130,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00000000000000000000401 /* libLifeOSMenubarCore.a in Frameworks */,
+				B00000000000000000000403 /* KeyboardShortcuts in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -180,6 +192,7 @@
 				F00000000000000000000014 /* GitHubIssueDetailClient.swift */,
 				F00000000000000000000015 /* GitHubIssueMutationClient.swift */,
 				F00000000000000000000016 /* TaskDetailViewModel.swift */,
+				F00000000000000000000017 /* QuickCaptureViewModel.swift */,
 			);
 			path = LifeOSMenubarCore;
 			sourceTree = "<group>";
@@ -195,6 +208,9 @@
 				F00000000000000000000106 /* SettingsWindowController.swift */,
 				F00000000000000000000107 /* StatusItemController.swift */,
 				F00000000000000000000108 /* TaskDetailView.swift */,
+				F00000000000000000000109 /* KeyboardShortcutsNames.swift */,
+				F00000000000000000000110 /* QuickCaptureView.swift */,
+				F00000000000000000000111 /* QuickCaptureWindowController.swift */,
 			);
 			path = LifeOSMenubarApp;
 			sourceTree = "<group>";
@@ -224,6 +240,7 @@
 				F00000000000000000000212 /* GitHubIssueMutationClientTests.swift */,
 				F00000000000000000000213 /* TaskDetailViewModelTests.swift */,
 				F00000000000000000000214 /* MarkdownLineParserTests.swift */,
+				F00000000000000000000215 /* QuickCaptureViewModelTests.swift */,
 			);
 			path = LifeOSMenubarCoreTests;
 			sourceTree = "<group>";
@@ -263,6 +280,9 @@
 				D00000000000000000000001 /* PBXTargetDependency */,
 			);
 			name = LifeOSMenubar;
+			packageProductDependencies = (
+				K00000000000000000000001 /* KeyboardShortcuts */,
+			);
 			productName = LifeOSMenubar;
 			productReference = P00000000000000000000001 /* LifeOSMenubar.app */;
 			productType = "com.apple.product-type.application";
@@ -331,6 +351,9 @@
 			);
 			mainGroup = G00000000000000000000001;
 			productRefGroup = G00000000000000000000008 /* Products */;
+			packageReferences = (
+				Q00000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -364,6 +387,9 @@
 				B00000000000000000000106 /* SettingsWindowController.swift in Sources */,
 				B00000000000000000000107 /* StatusItemController.swift in Sources */,
 				B00000000000000000000108 /* TaskDetailView.swift in Sources */,
+				B00000000000000000000109 /* KeyboardShortcutsNames.swift in Sources */,
+				B00000000000000000000110 /* QuickCaptureView.swift in Sources */,
+				B00000000000000000000111 /* QuickCaptureWindowController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -387,6 +413,7 @@
 				B00000000000000000000014 /* GitHubIssueDetailClient.swift in Sources */,
 				B00000000000000000000015 /* GitHubIssueMutationClient.swift in Sources */,
 				B00000000000000000000016 /* TaskDetailViewModel.swift in Sources */,
+				B00000000000000000000017 /* QuickCaptureViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -408,6 +435,7 @@
 				B00000000000000000000212 /* GitHubIssueMutationClientTests.swift in Sources */,
 				B00000000000000000000213 /* TaskDetailViewModelTests.swift in Sources */,
 				B00000000000000000000214 /* MarkdownLineParserTests.swift in Sources */,
+				B00000000000000000000215 /* QuickCaptureViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -425,6 +453,25 @@
 			targetProxy = C00000000000000000000002 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		Q00000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
+			requirement = {
+				kind = exactVersion;
+				version = 2.3.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		K00000000000000000000001 /* KeyboardShortcuts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = Q00000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
+			productName = KeyboardShortcuts;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		X00000000000000000000001 /* Debug */ = {
