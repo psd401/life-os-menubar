@@ -4,22 +4,51 @@ public struct IssueCacheSnapshot: Codable, Equatable, Sendable {
   public let issues: [LifeOSIssue]
   public let lastSyncedAt: Date?
   public let lastFullSyncedAt: Date?
+  public let projectFieldAccess: ProjectFieldAccess
 
   public init(
     issues: [LifeOSIssue],
     lastSyncedAt: Date?,
-    lastFullSyncedAt: Date? = nil
+    lastFullSyncedAt: Date? = nil,
+    projectFieldAccess: ProjectFieldAccess = .unknown
   ) {
     self.issues = issues
     self.lastSyncedAt = lastSyncedAt
     self.lastFullSyncedAt = lastFullSyncedAt
+    self.projectFieldAccess = projectFieldAccess
   }
 
   public static let empty = IssueCacheSnapshot(
     issues: [],
     lastSyncedAt: nil,
-    lastFullSyncedAt: nil
+    lastFullSyncedAt: nil,
+    projectFieldAccess: .unknown
   )
+
+  private enum CodingKeys: String, CodingKey {
+    case issues
+    case lastSyncedAt
+    case lastFullSyncedAt
+    case projectFieldAccess
+  }
+
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.issues = try container.decode([LifeOSIssue].self, forKey: .issues)
+    self.lastSyncedAt = try container.decodeIfPresent(Date.self, forKey: .lastSyncedAt)
+    self.lastFullSyncedAt = try container.decodeIfPresent(Date.self, forKey: .lastFullSyncedAt)
+    self.projectFieldAccess =
+      try container.decodeIfPresent(ProjectFieldAccess.self, forKey: .projectFieldAccess)
+      ?? .unknown
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(issues, forKey: .issues)
+    try container.encodeIfPresent(lastSyncedAt, forKey: .lastSyncedAt)
+    try container.encodeIfPresent(lastFullSyncedAt, forKey: .lastFullSyncedAt)
+    try container.encode(projectFieldAccess, forKey: .projectFieldAccess)
+  }
 }
 
 public protocol IssueCacheStoring: Sendable {

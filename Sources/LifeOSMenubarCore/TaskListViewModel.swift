@@ -8,6 +8,7 @@ public final class TaskListViewModel: ObservableObject {
   @Published public private(set) var activeFilter: TaskFilterSelection = .empty
   @Published public private(set) var savedFilters: [SavedTaskFilter] = []
   @Published public private(set) var lastSyncedAt: Date?
+  @Published public private(set) var projectFieldAccess: ProjectFieldAccess = .unknown
   @Published public private(set) var isRefreshing = false
   @Published public private(set) var errorMessage: String?
   @Published public private(set) var filterErrorMessage: String?
@@ -24,20 +25,53 @@ public final class TaskListViewModel: ObservableObject {
     activeFilter.selectedLabelCount
   }
 
+  public var todayIssues: [LifeOSIssue] {
+    TodayTaskPresentation.issues(
+      from: issues,
+      now: now(),
+      calendar: calendar,
+      searchText: searchText,
+      filterSelection: activeFilter
+    )
+  }
+
+  public var todayCount: Int {
+    TodayTaskPresentation.issues(
+      from: issues,
+      now: now(),
+      calendar: calendar
+    ).count
+  }
+
+  public var projectFieldMessage: String? {
+    guard projectFieldAccess == .missingScope else {
+      return nil
+    }
+    return
+      "Today dates are unavailable because this token is missing read:project. "
+      + "Other task features remain available."
+  }
+
   private let cacheStore: any IssueCacheStoring
   private let syncEngine: IssueSyncEngine
   private let filterStore: any TaskFilterStoring
+  private let now: @Sendable () -> Date
+  private let calendar: Calendar
   private var backgroundRefreshTask: Task<Void, Never>?
   private var lastFullSyncedAt: Date?
 
   public init(
     cacheStore: any IssueCacheStoring,
     syncEngine: IssueSyncEngine,
-    filterStore: any TaskFilterStoring
+    filterStore: any TaskFilterStoring,
+    now: @escaping @Sendable () -> Date = Date.init,
+    calendar: Calendar = .current
   ) {
     self.cacheStore = cacheStore
     self.syncEngine = syncEngine
     self.filterStore = filterStore
+    self.now = now
+    self.calendar = calendar
 
     do {
       apply(try cacheStore.load() ?? .empty)
@@ -178,7 +212,7 @@ public final class TaskListViewModel: ObservableObject {
     if issue.state == .closed {
       issues.removeAll { $0.number == issue.number }
     } else if let existingIndex = issues.firstIndex(where: { $0.number == issue.number }) {
-      issues[existingIndex] = issue
+      issues[existingIndex] = issue.preservingProjectFields(from: issues[existingIndex])
     } else {
       issues.append(issue)
     }
@@ -189,7 +223,8 @@ public final class TaskListViewModel: ObservableObject {
         IssueCacheSnapshot(
           issues: issues,
           lastSyncedAt: lastSyncedAt,
-          lastFullSyncedAt: lastFullSyncedAt
+          lastFullSyncedAt: lastFullSyncedAt,
+          projectFieldAccess: projectFieldAccess
         )
       )
     } catch {
@@ -202,6 +237,7 @@ public final class TaskListViewModel: ObservableObject {
     issues = snapshot.issues
     lastSyncedAt = snapshot.lastSyncedAt
     lastFullSyncedAt = snapshot.lastFullSyncedAt
+    projectFieldAccess = snapshot.projectFieldAccess
   }
 
   private func persistFilters() {

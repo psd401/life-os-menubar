@@ -26,6 +26,8 @@ public struct LifeOSIssue: Codable, Equatable, Identifiable, Sendable {
   public let labels: [GitHubLabel]
   public let updatedAt: Date
   public let state: GitHubIssueState
+  public let dueDate: ProjectDate?
+  public let deferUntil: ProjectDate?
 
   public init(
     number: Int,
@@ -33,7 +35,9 @@ public struct LifeOSIssue: Codable, Equatable, Identifiable, Sendable {
     body: String,
     labels: [GitHubLabel],
     updatedAt: Date,
-    state: GitHubIssueState = .open
+    state: GitHubIssueState = .open,
+    dueDate: ProjectDate? = nil,
+    deferUntil: ProjectDate? = nil
   ) {
     self.number = number
     self.title = title
@@ -41,6 +45,34 @@ public struct LifeOSIssue: Codable, Equatable, Identifiable, Sendable {
     self.labels = labels
     self.updatedAt = updatedAt
     self.state = state
+    self.dueDate = dueDate
+    self.deferUntil = deferUntil
+  }
+
+  public func updatingProjectFields(_ fields: IssueProjectFields) -> LifeOSIssue {
+    LifeOSIssue(
+      number: number,
+      title: title,
+      body: body,
+      labels: labels,
+      updatedAt: updatedAt,
+      state: state,
+      dueDate: fields.dueDate,
+      deferUntil: fields.deferUntil
+    )
+  }
+
+  public func preservingProjectFields(from issue: LifeOSIssue) -> LifeOSIssue {
+    LifeOSIssue(
+      number: number,
+      title: title,
+      body: body,
+      labels: labels,
+      updatedAt: updatedAt,
+      state: state,
+      dueDate: dueDate ?? issue.dueDate,
+      deferUntil: deferUntil ?? issue.deferUntil
+    )
   }
 }
 

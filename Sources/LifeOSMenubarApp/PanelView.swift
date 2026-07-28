@@ -6,6 +6,7 @@ struct PanelView: View {
   @ObservedObject var settingsViewModel: SettingsViewModel
   @ObservedObject var taskListViewModel: TaskListViewModel
   @State private var selectedIssue: LifeOSIssue?
+  @State private var listMode = PanelListMode.all
   let openSettings: () -> Void
   let quit: () -> Void
 
@@ -47,6 +48,12 @@ struct PanelView: View {
         }
       }
 
+      Picker("Task view", selection: $listMode) {
+        Text("All").tag(PanelListMode.all)
+        Text("Today (\(taskListViewModel.todayCount))").tag(PanelListMode.today)
+      }
+      .pickerStyle(.segmented)
+
       TextField("Search tasks", text: $taskListViewModel.searchText)
         .textFieldStyle(.roundedBorder)
         .accessibilityLabel("Search tasks by title")
@@ -69,15 +76,32 @@ struct PanelView: View {
           .accessibilityLabel("Filter error: \(filterErrorMessage)")
       }
 
+      if let projectFieldMessage = taskListViewModel.projectFieldMessage {
+        Label(projectFieldMessage, systemImage: "calendar.badge.exclamationmark")
+          .font(.caption)
+          .foregroundStyle(.orange)
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityLabel("Project date warning: \(projectFieldMessage)")
+      }
+
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 14) {
-          ForEach(taskListViewModel.sections) { section in
-            TaskSectionView(
-              section: section,
+          if listMode == .today {
+            TodayTaskSectionView(
+              issues: taskListViewModel.todayIssues,
               selectIssue: { issue in
                 selectedIssue = issue
               }
             )
+          } else {
+            ForEach(taskListViewModel.sections) { section in
+              TaskSectionView(
+                section: section,
+                selectIssue: { issue in
+                  selectedIssue = issue
+                }
+              )
+            }
           }
         }
         .padding(.vertical, 2)
@@ -126,6 +150,11 @@ struct PanelView: View {
       .accessibilityLabel("More options")
     }
   }
+}
+
+private enum PanelListMode: String, CaseIterable {
+  case all
+  case today
 }
 
 private struct FilterControlsView: View {
@@ -328,6 +357,40 @@ private struct TaskSectionView: View {
   }
 }
 
+private struct TodayTaskSectionView: View {
+  let issues: [LifeOSIssue]
+  let selectIssue: (LifeOSIssue) -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack {
+        Text("Due Today & Overdue")
+          .font(.subheadline.weight(.semibold))
+        Text("\(issues.count)")
+          .font(.caption.monospacedDigit())
+          .foregroundStyle(.secondary)
+        Spacer()
+      }
+
+      if issues.isEmpty {
+        Text("No tasks due today")
+          .font(.caption)
+          .foregroundStyle(.tertiary)
+          .padding(.leading, 2)
+      } else {
+        ForEach(issues) { issue in
+          TaskRow(
+            issue: issue,
+            action: {
+              selectIssue(issue)
+            }
+          )
+        }
+      }
+    }
+  }
+}
+
 private struct TaskRow: View {
   let issue: LifeOSIssue
   let action: () -> Void
@@ -345,6 +408,12 @@ private struct TaskRow: View {
           .lineLimit(2)
 
         Spacer(minLength: 4)
+
+        if let dueDate = issue.dueDate {
+          Text(dueDate.githubDate)
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.secondary)
+        }
 
         if let priority = issue.labels.first(where: { $0.name.hasPrefix("priority:") }) {
           Text(priority.name.replacingOccurrences(of: "priority:", with: "").uppercased())
