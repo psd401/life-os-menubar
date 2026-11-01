@@ -8,15 +8,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private var statusItemController: StatusItemController?
   private var settingsWindowController: SettingsWindowController?
   private var taskListViewModel: TaskListViewModel?
+  private var settingsViewModel: SettingsViewModel?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     NSApplication.shared.setActivationPolicy(.accessory)
 
-    let settingsViewModel = SettingsViewModel(
-      tokenStore: KeychainTokenStore(),
-      validator: GitHubTokenValidator(),
-      launchAtLoginController: LaunchAtLoginController()
-    )
     let cacheStore = JSONIssueCacheStore()
     let taskListViewModel = TaskListViewModel(
       cacheStore: cacheStore,
@@ -26,6 +22,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         cacheStore: cacheStore
       ),
       filterStore: JSONTaskFilterStore()
+    )
+    // The clients read the configured repository from the same
+    // `UserDefaultsTaskRepositoryStore` on every request, so changing it here
+    // takes effect without rebuilding them — but the cache still holds the
+    // previous repo's tasks, which is what this callback throws away.
+    let settingsViewModel = SettingsViewModel(
+      tokenStore: KeychainTokenStore(),
+      validator: GitHubTokenValidator(),
+      launchAtLoginController: LaunchAtLoginController(),
+      onRepositoryChange: { [weak self, weak taskListViewModel] _ in
+        guard let taskListViewModel else {
+          return
+        }
+        taskListViewModel.resetForRepositoryChange()
+        guard let token = self?.settingsViewModel?.token, !token.isEmpty else {
+          return
+        }
+        Task {
+          await taskListViewModel.refresh(token: token)
+        }
+      }
     )
     let settingsWindowController = SettingsWindowController(
       viewModel: settingsViewModel,
@@ -62,6 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       )
     )
 
+    self.settingsViewModel = settingsViewModel
     self.settingsWindowController = settingsWindowController
     self.quickCaptureWindowController = quickCaptureWindowController
     self.taskListViewModel = taskListViewModel
