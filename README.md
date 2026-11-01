@@ -1,17 +1,42 @@
 # Life OS Menubar
 
-Native macOS menubar app fronting `krishagel/life-os` (GitHub Issues as tasks).
+Native macOS menubar app that turns a GitHub Issues repo into a task list you
+can reach from anywhere, without opening a browser.
+
+**Owner:** [@krishagel](https://github.com/krishagel) · **License:** [MIT](LICENSE)
+
+## Why
+
+GitHub Issues is already a good task store — labels, comments, Projects dates,
+an API, and history for free. What it lacks is a two-second path to "what should
+I do next?" and to capturing a thought before it is gone. This app is that path:
+a menu bar item with a cached, filterable task panel, a Today count on the icon,
+inline detail and actions, and a global quick-capture hotkey. It is a read-mostly
+client over GitHub's API — GitHub stays the source of truth, and nothing here
+holds state you cannot rebuild from the repo.
+
+Today it reads `krishagel/life-os`. Making the task repo user-configurable is
+tracked in [#21](https://github.com/psd401/life-os-menubar/issues/21); until that
+lands, point it at your own repo by changing the `owner`/`repo` defaults in the
+clients under `Sources/LifeOSMenubarCore/`.
 
 ## Requirements
 
 - macOS 15 or later
 - Xcode 16 or later with Swift 6
+- A GitHub fine-grained personal access token with access to your task repo, and
+  the `read:project` scope if you want the Today view's Project dates
 
 ## Build and test
 
 ```sh
-swift test
+# Lint (zero warnings required)
 swift format lint --strict --recursive Sources Tests Package.swift
+
+# Unit tests
+swift test
+
+# Full test run through the Xcode project
 xcodebuild test \
   -project LifeOSMenubar.xcodeproj \
   -scheme LifeOSMenubar \
@@ -19,9 +44,34 @@ xcodebuild test \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-The app runs as an accessory application with no Dock icon. Add a fine-grained
-GitHub personal access token in Settings; it is stored only in the macOS
-Keychain.
+## Install
+
+There is no signed release yet (distribution is out of scope for v1.1), so build
+and install it locally:
+
+```sh
+git clone https://github.com/psd401/life-os-menubar.git
+cd life-os-menubar
+
+xcodebuild build \
+  -project LifeOSMenubar.xcodeproj \
+  -scheme LifeOSMenubar \
+  -configuration Release \
+  -destination 'platform=macOS' \
+  -derivedDataPath build \
+  CODE_SIGNING_ALLOWED=NO
+
+cp -R build/Build/Products/Release/LifeOSMenubar.app /Applications/
+open /Applications/LifeOSMenubar.app
+```
+
+Then open **Settings** from the panel and paste your token. The app runs as an
+accessory application with no Dock icon — look for its menu bar item. The token
+is stored only in the macOS Keychain, never on disk in the clear. Enable **Launch
+at Login** in Settings if you want it always running.
+
+To contribute, see [AGENTS.md](AGENTS.md) for the build/test/lint commands, the
+architecture map, and the evidence a PR must carry.
 
 ## Task sync
 
@@ -95,3 +145,17 @@ until a token with `read:project` is saved.
 
 The menu bar icon shows the unfiltered Today task count after each successful
 sync. The badge can be disabled under **Settings → General**.
+
+## Documentation
+
+- [AGENTS.md](AGENTS.md) — build/test/lint commands, architecture map, PR evidence bar
+- [openwiki/](openwiki/index.md) — architecture notes and the decision record
+- [Contributing](https://github.com/psd401/.github/blob/main/CONTRIBUTING.md) and
+  [Security policy](https://github.com/psd401/.github/blob/main/SECURITY.md) —
+  org-wide defaults from `psd401/.github`
+
+## Owner and license
+
+Owned by [@krishagel](https://github.com/krishagel) (repo custom property
+`owner`). Built to the [PSD engineering standards](https://github.com/psd401/psd-dev-standards).
+Licensed under the [MIT License](LICENSE).

@@ -3,3 +3,11 @@
 DerivedData/
 xcuserdata/
 *.xcuserstate
+
+# Local derived-data path used by the README install steps
+/build/
+
+# Agent worktrees and transient gate state
+.claude/worktrees/
+.psd/last-gate-result
+.psd/finalizing
