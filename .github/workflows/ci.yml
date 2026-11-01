@@ -1,10 +1,10 @@
 name: CI
 
-# A change that touches only docs doesn't need the macOS runner, so it skips
-# this workflow. It still runs when any other file changes. If "Swift
-# validation" ever becomes a required check, replace paths-ignore with a skip
-# inside the job: a workflow skipped this way reports no status, so a required
-# check would wait forever.
+# Skipped when every changed file is Markdown or under openwiki/, so docs don't
+# spend macOS minutes (standards/06, "Runner minutes"). Any other file runs it.
+# If "Swift validation" ever becomes a required check, replace paths-ignore with
+# a skip inside the job: a workflow skipped this way reports no status, so a
+# required check would wait forever.
 on:
   pull_request:
     branches:
@@ -12,18 +12,12 @@ on:
     paths-ignore:
       - "**/*.md"
       - "openwiki/**"
-      - "docs/**"
-      - ".verification/**"
-      - "LICENSE"
   push:
     branches:
       - main
     paths-ignore:
       - "**/*.md"
       - "openwiki/**"
-      - "docs/**"
-      - ".verification/**"
-      - "LICENSE"
 
 permissions:
   contents: read

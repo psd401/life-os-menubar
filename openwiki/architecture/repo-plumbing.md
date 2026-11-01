@@ -17,7 +17,7 @@ and was merged into `main` (merge commit, history preserved) and deleted — see
 
 `.github/workflows/ci.yml` — `CI / Swift validation`, `xcode-27`, 20-minute
 timeout, triggered on `pull_request` and `push` to `main`. A change that touches
-only docs (`**/*.md`, `openwiki/**`, `docs/**`, `.verification/**`, `LICENSE`)
+only docs (every changed file matches `**/*.md` or `openwiki/**`, per standards/06)
 skips it, so docs don't spend macOS runner minutes. CodeQL default setup is not
 affected and still scans every PR. Four steps, in order:
 
