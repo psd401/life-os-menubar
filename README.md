@@ -25,8 +25,8 @@ clients under `Sources/LifeOSMenubarCore/`.
 - macOS 26 or later — the NexusKit design-system package sets this floor
   ([decision 0004](openwiki/decisions/0004-macos-26-floor.md))
 - Xcode 26 or later with Swift 6.2
-- A GitHub fine-grained personal access token with access to your task repo, and
-  the `read:project` scope if you want the Today view's Project dates
+- A GitHub account that can reach your task repo, and one of the two sign-in
+  paths below
 
 ## Build and test
 
@@ -84,9 +84,11 @@ Remove the old bundle first and copy with `ditto` rather than `cp -R`: copying a
 binaries and resources from the previous build inside the bundle and fails
 silently. This matters on every upgrade, not just the first install.
 
-Then open **Settings** from the panel and paste your token. The token is stored
-only in the macOS Keychain, never on disk in the clear. Enable **Launch at
-Login** in Settings if you want it always running.
+Then open **Settings** from the panel and sign in — see
+[Signing in](#signing-in) for the two paths and what each one grants. Whichever
+path you use, the token is stored only in the macOS Keychain, never on disk in
+the clear and never in a log. Enable **Launch at Login** in Settings if you want
+it always running.
 
 **If nothing seems to happen:** that is expected. The app is an accessory
 application — no Dock icon, no app-switcher entry, no window on launch. Its only
@@ -100,6 +102,52 @@ Signing and notarization are out of scope for v1.1.
 
 To contribute, see [AGENTS.md](AGENTS.md) for the build/test/lint commands, the
 architecture map, and the evidence a PR must carry.
+
+## Signing in
+
+There are two paths, and they trade convenience against blast radius. Pick with
+the table in front of you rather than taking the default blind.
+
+| | **Sign in with GitHub** (default) | **Use a token instead** (advanced) |
+|---|---|---|
+| How | Settings → **Sign in with GitHub**. The app shows a code, opens `github.com/login/device`, you approve, done. | Settings → **Advanced → Use a token instead**. Paste a fine-grained personal access token. |
+| What it grants | Classic scopes `repo` and `read:project`. | Exactly what you scope the token to. |
+| Breadth | **Broad.** `repo` grants **read and write on every repository your GitHub account can reach** — public, private, and every organization repository your account has access to. There is no narrower classic scope that can read and write issues on a private repo. | **Narrow.** Scope it to **Issues: read and write** on your one task repository and the app can do nothing else, anywhere. |
+| Today view and menu bar count | Works. `read:project` reaches your user-owned Project v2 dates. | **Off.** Fine-grained tokens expose Projects as an organization-only permission, so a user-owned project is unreachable. Settings says so; everything else works. |
+| Expiry | None. OAuth App tokens do not expire. | Whatever expiry you set on the token. |
+
+Both paths end in the same place: the token goes into the macOS Keychain
+(`KeychainTokenStore`) and nowhere else. **Sign out** in Settings removes the
+Keychain item. A token saved by an earlier version of the app keeps working
+after an update — there is no forced re-authentication — until you sign out.
+
+Why `repo` at all: the Today view needs **user-owned** Projects v2, which only a
+classic scope can reach. Fine-grained tokens cannot, and a GitHub App cannot
+either (verified 2026-10-31). The reasoning is in
+[decision 0002](openwiki/decisions/0002-oauth-device-flow.md).
+
+### Registering the OAuth App (one time, by the repo owner)
+
+Device-flow sign-in needs an OAuth App to point at. Its **client ID is public by
+design** — the device flow has no client secret, and the ID alone authorizes
+nothing until a user approves a code — so it ships as the single constant
+`GitHubOAuthApp.clientID` in `Sources/LifeOSMenubarCore/DeviceFlowClient.swift`.
+It is not a secret and does not belong in the Keychain or Secrets Manager.
+
+1. Go to the **psd401** org → **Settings** → **Developer settings** →
+   **OAuth Apps** → **New OAuth App**.
+2. **Application name:** `Life OS Menubar`. **Homepage URL:** this repository's
+   URL.
+3. **Authorization callback URL:** required by the form but unused — the device
+   flow never redirects. Any `https` URL you control is fine; the homepage URL
+   works.
+4. Register the app, then open it and tick **Enable Device Flow**. Sign-in
+   returns `device_flow_disabled` without this.
+5. Copy the **Client ID** into `GitHubOAuthApp.clientID` and open a PR. Do not
+   generate a client secret; nothing in this app uses one.
+
+Until that constant is filled in, **Sign in with GitHub** is disabled and
+Settings explains why. The advanced token path works regardless.
 
 ## Task sync
 
@@ -166,10 +214,11 @@ Project v2 items attached to open tasks. The **Today** view includes tasks due
 today or overdue, except tasks deferred until a later date. Project fields are
 read-only: the app does not send Project v2 mutations.
 
-Project date access requires the GitHub `read:project` scope. If the saved token
-does not have that scope, normal task sync, filtering, detail actions, and quick
-capture continue to work. The panel and Settings show a remediation message
-until a token with `read:project` is saved.
+Project date access requires the GitHub `read:project` scope, which only the
+device-flow path grants (see [Signing in](#signing-in)). Without it — the normal
+state of the advanced fine-grained-token path — task sync, filtering, detail
+actions, and quick capture all continue to work; only Today and the menu bar
+count are off. The panel and Settings say so and point at sign-in as the remedy.
 
 The menu bar icon shows the unfiltered Today task count after each successful
 sync. The badge can be disabled under **Settings → General**.

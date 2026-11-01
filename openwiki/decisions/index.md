@@ -11,7 +11,7 @@ landed yet says so — "accepted" is not "implemented".
 | # | Decision | Date | Status |
 |---|----------|------|--------|
 | [0001](0001-single-main-branch.md) | Single `main` branch; `dev` merged and deleted | 2026-10-31 | Implemented |
-| [0002](0002-oauth-device-flow.md) | Replace PAT entry with the OAuth device flow | 2026-10-31 | Accepted — not implemented ([#18](https://github.com/psd401/life-os-menubar/issues/18)) |
+| [0002](0002-oauth-device-flow.md) | OAuth device flow by default, token entry as the advanced path | 2026-10-31, amended 2026-11-01 | Implemented ([#18](https://github.com/psd401/life-os-menubar/issues/18)) |
 | [0003](0003-nexus-design-system.md) | Adopt the Nexus design system via NexusKit | 2026-10-31 | Implemented ([#19](https://github.com/psd401/life-os-menubar/issues/19)) |
 | [0004](0004-macos-26-floor.md) | Raise the deployment floor to macOS 26 | 2026-10-31 | Implemented ([#19](https://github.com/psd401/life-os-menubar/issues/19)) |
 | [0005](0005-configurable-task-repo.md) | Make the task repo user-configurable and publish the repo standard | 2026-10-31 | Accepted — not implemented ([#21](https://github.com/psd401/life-os-menubar/issues/21)) |

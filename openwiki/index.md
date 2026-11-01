@@ -26,5 +26,6 @@ Owner: `krishagel` · Tier: `c-experiment` · Lifecycle: `active` · IaC: `none`
 | What builds the shippable app? | The Xcode project (`LifeOSMenubar.xcodeproj`), scheme `LifeOSMenubar`. `Package.swift` builds the same sources for fast `swift test` runs. |
 | Where does testable logic live? | `Sources/LifeOSMenubarCore` — no AppKit, no SwiftUI. |
 | Where is the GitHub token? | The macOS Keychain only, via `KeychainTokenStore`. |
+| How is the token obtained? | The OAuth device flow by default, or a pasted fine-grained token on the advanced path (see [decision 0002](decisions/0002-oauth-device-flow.md)). |
 | What is the only long-lived branch? | `main`. `dev` was merged into `main` and deleted (see [branch unification](decisions/0001-single-main-branch.md)). |
 | Where is the verify gate defined? | [`.psd/verify.json`](../.psd/verify.json) — the same commands `.github/workflows/ci.yml` runs. |
