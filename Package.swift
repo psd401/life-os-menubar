@@ -1,0 +1,45 @@
+// swift-tools-version: 6.0
+
+import PackageDescription
+
+let package = Package(
+  name: "LifeOSMenubar",
+  platforms: [
+    .macOS(.v15)
+  ],
+  products: [
+    .library(
+      name: "LifeOSMenubarCore",
+      targets: ["LifeOSMenubarCore"]
+    ),
+    .executable(
+      name: "LifeOSMenubar",
+      targets: ["LifeOSMenubar"]
+    ),
+  ],
+  dependencies: [
+    .package(
+      url: "https://github.com/sindresorhus/KeyboardShortcuts",
+      exact: "2.3.0"
+    )
+  ],
+  targets: [
+    .target(
+      name: "LifeOSMenubarCore",
+      path: "Sources/LifeOSMenubarCore"
+    ),
+    .executableTarget(
+      name: "LifeOSMenubar",
+      dependencies: [
+        "LifeOSMenubarCore",
+        .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+      ],
+      path: "Sources/LifeOSMenubarApp"
+    ),
+    .testTarget(
+      name: "LifeOSMenubarCoreTests",
+      dependencies: ["LifeOSMenubarCore"],
+      path: "Tests/LifeOSMenubarCoreTests"
+    ),
+  ]
+)
