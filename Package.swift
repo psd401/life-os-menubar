@@ -20,7 +20,7 @@ let package = Package(
   dependencies: [
     .package(
       url: "https://github.com/sindresorhus/KeyboardShortcuts",
-      exact: "2.3.0"
+      exact: "3.1.0"
     )
   ],
   targets: [
