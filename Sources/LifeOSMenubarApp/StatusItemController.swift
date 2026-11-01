@@ -9,7 +9,7 @@ final class StatusItemController {
   private let onPanelOpen: () -> Void
   private let statusItem: NSStatusItem
   private var cancellables: Set<AnyCancellable> = []
-  private var renderedBadgeCount: Int?
+  private var renderedBadge: (count: Int, kind: MenuBarCount)?
 
   init(
     panelController: PanelController,
@@ -32,14 +32,12 @@ final class StatusItemController {
     Publishers.CombineLatest3(
       taskListViewModel.$issues,
       taskListViewModel.$projectFieldAccess,
-      settingsViewModel.$isTodayBadgeEnabled
+      settingsViewModel.$menuBarCount
     )
-    .sink { [weak self] _, projectFieldAccess, isBadgeEnabled in
-      let count =
-        isBadgeEnabled && projectFieldAccess == .available
-        ? taskListViewModel.todayCount
-        : 0
-      self?.updateBadge(count: count)
+    // `issues` and `projectFieldAccess` are inputs to the count, not
+    // arguments: the view model computes it from its own current state.
+    .sink { [weak self] _, _, setting in
+      self?.updateBadge(count: taskListViewModel.menuBarCount(for: setting), kind: setting)
     }
     .store(in: &cancellables)
   }
@@ -51,17 +49,30 @@ final class StatusItemController {
     }
   }
 
-  private func updateBadge(count: Int) {
-    guard renderedBadgeCount != count else {
+  private func updateBadge(count: Int, kind: MenuBarCount) {
+    if let renderedBadge, renderedBadge.count == count, renderedBadge.kind == kind {
       return
     }
-    renderedBadgeCount = count
+    renderedBadge = (count, kind)
 
     statusItem.length = count > 0 ? NSStatusItem.variableLength : NSStatusItem.squareLength
     statusItem.button?.image = StatusItemBadgeRenderer.image(count: count)
-    statusItem.button?.setAccessibilityLabel(
-      count > 0 ? "Life OS, \(count) due today" : "Life OS"
-    )
+    statusItem.button?.setAccessibilityLabel(Self.accessibilityLabel(count: count, kind: kind))
+  }
+
+  /// The badge is a bare number, so VoiceOver has to say what it counts.
+  private static func accessibilityLabel(count: Int, kind: MenuBarCount) -> String {
+    guard count > 0 else {
+      return "Life OS"
+    }
+    switch kind {
+    case .today:
+      return "Life OS, \(count) due today"
+    case .inbox:
+      return "Life OS, \(count) in Inbox"
+    case .off:
+      return "Life OS"
+    }
   }
 }
 

@@ -503,6 +503,88 @@ struct TaskListViewModelTests {
     #expect(viewModel.issues.map(\.number) == [9])
   }
 
+  @Test
+  func menuBarCountShowsTheChosenNumber() throws {
+    let viewModel = try makeMenuBarCountViewModel(projectFieldAccess: .available)
+
+    // Due today (#1) and overdue (#2). Not #3 (deferred past today), #4 (due
+    // later), #5 (no date) or #6 (closed).
+    #expect(viewModel.menuBarCount(for: .today) == 2)
+    // Open tasks labelled status:inbox: #1, #3 and #5. Closed #6 is not.
+    #expect(viewModel.menuBarCount(for: .inbox) == 3)
+    #expect(viewModel.menuBarCount(for: .off) == 0)
+  }
+
+  @Test
+  func menuBarTodayCountIsZeroWithoutProjectAccess() throws {
+    let viewModel = try makeMenuBarCountViewModel(projectFieldAccess: .missingScope)
+
+    // Without read:project the due dates are unknown, so a Today number would
+    // be a guess. Inbox does not depend on Project fields.
+    #expect(viewModel.menuBarCount(for: .today) == 0)
+    #expect(viewModel.menuBarCount(for: .inbox) == 3)
+  }
+
+  @Test
+  func menuBarInboxCountIgnoresThePanelsSearchAndFilters() throws {
+    let viewModel = try makeMenuBarCountViewModel(projectFieldAccess: .available)
+
+    viewModel.searchText = "matches nothing"
+
+    // The badge describes the repo, not whatever the panel is narrowed to.
+    #expect(viewModel.menuBarCount(for: .inbox) == 3)
+    #expect(viewModel.menuBarCount(for: .today) == 2)
+  }
+
+  private func makeMenuBarCountViewModel(
+    projectFieldAccess: ProjectFieldAccess
+  ) throws -> TaskListViewModel {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = try #require(TimeZone(identifier: "America/Los_Angeles"))
+    let now = try #require(ISO8601DateFormatter().date(from: "2026-07-28T19:00:00Z"))
+    func issue(
+      _ number: Int,
+      status: String,
+      due: String? = nil,
+      deferUntil: String? = nil,
+      state: GitHubIssueState = .open
+    ) -> LifeOSIssue {
+      LifeOSIssue(
+        number: number,
+        title: "Task \(number)",
+        body: "",
+        labels: [GitHubLabel(name: "status:\(status)", color: "ffffff")],
+        updatedAt: now,
+        state: state,
+        dueDate: due.flatMap(ProjectDate.init(githubDate:)),
+        deferUntil: deferUntil.flatMap(ProjectDate.init(githubDate:))
+      )
+    }
+    let cache = ViewModelCacheStore(
+      snapshot: IssueCacheSnapshot(
+        issues: [
+          issue(1, status: "inbox", due: "2026-07-28"),
+          issue(2, status: "next", due: "2026-07-20"),
+          issue(3, status: "inbox", due: "2026-07-27", deferUntil: "2026-07-29"),
+          issue(4, status: "next", due: "2026-08-05"),
+          issue(5, status: "inbox"),
+          issue(6, status: "inbox", due: "2026-07-28", state: .closed),
+        ],
+        lastSyncedAt: now,
+        projectFieldAccess: projectFieldAccess
+      )
+    )
+    return TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: ViewModelFilterStore(),
+      now: { now },
+      calendar: calendar
+    )
+  }
 }
 
 private func viewModelTestIssue(number: Int) -> LifeOSIssue {

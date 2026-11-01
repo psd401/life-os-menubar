@@ -144,7 +144,7 @@ the table in front of you rather than taking the default blind.
 | How | Settings → **Sign in with GitHub**. The app shows a code, opens `github.com/login/device`, you approve, done. | Settings → **Advanced → Use a token instead**. Paste a fine-grained personal access token. |
 | What it grants | Classic scopes `repo` and `read:project`. | Exactly what you scope the token to. |
 | Breadth | **Broad.** `repo` grants **read and write on every repository your GitHub account can reach** — public, private, and every organization repository your account has access to. There is no narrower classic scope that can read and write issues on a private repo. | **Narrow.** Scope it to **Issues: read and write** on your one task repository and the app can do nothing else, anywhere. |
-| Today view and menu bar count | Works. `read:project` reaches your user-owned Project v2 dates. | **Off.** Fine-grained tokens expose Projects as an organization-only permission, so a user-owned project is unreachable. Settings says so; everything else works. |
+| Today view and the Today menu bar count | Works. `read:project` reaches your user-owned Project v2 dates. | **Off.** Fine-grained tokens expose Projects as an organization-only permission, so a user-owned project is unreachable. Settings says so; everything else works. |
 | Expiry | None. OAuth App tokens do not expire. | Whatever expiry you set on the token. |
 
 Both paths end in the same place: the token goes into the macOS Keychain
@@ -254,8 +254,14 @@ state of the advanced fine-grained-token path — task sync, filtering, detail
 actions, and quick capture all continue to work; only Today and the menu bar
 count are off. The panel and Settings say so and point at sign-in as the remedy.
 
-The menu bar icon shows the unfiltered Today task count after each successful
-sync. The badge can be disabled under **Settings → General**.
+The menu bar icon shows a count you pick under **Settings → General → Menu bar
+count**:
+- **Today** (the default): open tasks due today or overdue.
+- **Inbox**: tasks in Inbox.
+- **Off**: no count.
+
+Either count ignores the panel's search and filters, and it updates after each
+successful sync.
 
 ## Documentation
 

@@ -43,6 +43,21 @@ public final class TaskListViewModel: ObservableObject {
     ).count
   }
 
+  /// The number for the menu bar icon. It describes the whole repo, so the
+  /// panel's search and filters don't change it. Today is 0 without
+  /// `read:project`, because the due dates are then unknown rather than absent.
+  public func menuBarCount(for setting: MenuBarCount) -> Int {
+    switch setting {
+    case .today:
+      projectFieldAccess == .available ? todayCount : 0
+    case .inbox:
+      TaskListPresentation.sections(issues: issues, searchText: "")
+        .first { $0.status == .inbox }?.issues.count ?? 0
+    case .off:
+      0
+    }
+  }
+
   public var projectFieldMessage: String? {
     guard projectFieldAccess == .missingScope else {
       return nil

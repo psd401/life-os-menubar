@@ -48,7 +48,7 @@ Clients    GitHubIssueClient · GitHubIssueDetailClient · GitHubIssueMutationCl
            GitHubProjectFieldClient · GitHubTokenValidator
 Sync       IssueSyncEngine (actor)
 Storage    IssueCacheStore · TaskFilterStore · KeychainTokenStore
-           TodayBadgePreferenceStore · LaunchAtLoginController
+           MenuBarCountPreferenceStore · LaunchAtLoginController
 ViewModel  TaskListViewModel · TaskDetailViewModel · SettingsViewModel · QuickCaptureViewModel
 ```
 
@@ -65,12 +65,12 @@ constructed. `applicationDidFinishLaunching` sets the activation policy to
 `.accessory`, builds the stores, clients, sync engine, and view models, and wires
 them into:
 
-- `StatusItemController` — the menu bar item and the Today count badge. Its
+- `StatusItemController` — the menu bar item and its count badge (Today, Inbox or off, per Settings). Its
   badge renderer is deliberately outside the Nexus palette: the image is a
   **template** image, so its black is a mask macOS tints to match the menu bar
 - `PanelController` + `PanelView` — the task panel, with `TaskDetailView` inside
 - `SettingsWindowController` + `SettingsView` — token entry, the task repository
-  field and its validation, launch at login, badge toggle
+  field and its validation, launch at login, the menu bar count picker
 - `QuickCaptureWindowController` + `QuickCaptureView` — the global-hotkey capture window
 
 It then starts background refresh and kicks a first refresh. There is no DI

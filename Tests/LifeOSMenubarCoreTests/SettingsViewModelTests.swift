@@ -372,16 +372,16 @@ struct SettingsViewModelTests {
   }
 
   @Test
-  func loadsAndPersistsTodayBadgePreference() {
-    let badgeStore = BadgePreferenceStoreSpy(isEnabled: false)
+  func loadsAndPersistsTheMenuBarCountChoice() {
+    let badgeStore = BadgePreferenceStoreSpy(count: .off)
     let viewModel = makeViewModel(badgeStore: badgeStore)
 
-    #expect(!viewModel.isTodayBadgeEnabled)
+    #expect(viewModel.menuBarCount == .off)
 
-    viewModel.setTodayBadgeEnabled(true)
+    viewModel.setMenuBarCount(.inbox)
 
-    #expect(viewModel.isTodayBadgeEnabled)
-    #expect(badgeStore.savedValues == [true])
+    #expect(viewModel.menuBarCount == .inbox)
+    #expect(badgeStore.savedValues == [.inbox])
   }
 
   private func makeViewModel(
@@ -606,31 +606,31 @@ private struct ValidationStubError: LocalizedError {
   }
 }
 
-private final class BadgePreferenceStoreSpy: TodayBadgePreferenceStoring, @unchecked Sendable {
+private final class BadgePreferenceStoreSpy: MenuBarCountPreferenceStoring, @unchecked Sendable {
   private let lock = NSLock()
-  private var isEnabled: Bool
-  private var mutableSavedValues: [Bool] = []
+  private var count: MenuBarCount
+  private var mutableSavedValues: [MenuBarCount] = []
 
-  init(isEnabled: Bool = true) {
-    self.isEnabled = isEnabled
+  init(count: MenuBarCount = .today) {
+    self.count = count
   }
 
-  var savedValues: [Bool] {
+  var savedValues: [MenuBarCount] {
     lock.withLock {
       mutableSavedValues
     }
   }
 
-  func loadIsEnabled() throws -> Bool {
+  func loadCount() throws -> MenuBarCount {
     lock.withLock {
-      isEnabled
+      count
     }
   }
 
-  func saveIsEnabled(_ isEnabled: Bool) throws {
+  func saveCount(_ count: MenuBarCount) throws {
     lock.withLock {
-      self.isEnabled = isEnabled
-      mutableSavedValues.append(isEnabled)
+      self.count = count
+      mutableSavedValues.append(count)
     }
   }
 }

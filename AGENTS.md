@@ -62,12 +62,12 @@ Resources/Info.plist         → LSUIElement = true (accessory app, no Dock icon
 |-------|-------|------|
 | Model | `LifeOSIssue`, `IssueDetail`, `ProjectFields`, `TaskFilter`, `LabelRules`, `TaskRepository` | Value types + the label-contract rules (one `status:*`, one `priority:*`) and the required-label list |
 | Clients | `GitHubIssueClient`, `GitHubIssueDetailClient`, `GitHubIssueMutationClient`, `GitHubProjectFieldClient`, `GitHubTokenValidator`, `TaskRepositoryValidator` | GitHub I/O. Reads use GraphQL; mutations use REST. Each is behind a protocol so tests inject a fake |
-| Sync / storage | `IssueSyncEngine` (actor), `IssueCacheStore`, `TaskFilterStore`, `KeychainTokenStore`, `UserDefaultsTaskRepositoryStore`, `TodayBadgePreferenceStore`, `LaunchAtLoginController` | Watermarked delta sync with a ≥24h full reconcile; JSON caches in Application Support; token in the Keychain; repo slug in `UserDefaults` |
+| Sync / storage | `IssueSyncEngine` (actor), `IssueCacheStore`, `TaskFilterStore`, `KeychainTokenStore`, `UserDefaultsTaskRepositoryStore`, `UserDefaultsMenuBarCountPreferenceStore`, `LaunchAtLoginController` | Watermarked delta sync with a ≥24h full reconcile; JSON caches in Application Support; token in the Keychain; repo slug in `UserDefaults` |
 | View models | `TaskListViewModel`, `TaskDetailViewModel`, `SettingsViewModel`, `QuickCaptureViewModel` | `@MainActor` observable state the views bind to |
 
 **App target** — `LifeOSMenubarMain` → `AppDelegate` is the single composition
 root: it constructs every store, client, sync engine, and view model and wires
-them to `StatusItemController` (menu bar item + Today badge),
+them to `StatusItemController` (menu bar item + its count badge),
 `PanelController`/`PanelView` (the panel), `TaskDetailView`,
 `SettingsWindowController`/`SettingsView`, and
 `QuickCaptureWindowController`/`QuickCaptureView` (global hotkey). Views hold no

@@ -292,12 +292,12 @@ private struct AlwaysValidTokenValidator: GitHubTokenValidating {
   }
 }
 
-private struct InMemoryBadgePreferenceStore: TodayBadgePreferenceStoring {
-  func loadIsEnabled() throws -> Bool {
-    true
+private struct InMemoryBadgePreferenceStore: MenuBarCountPreferenceStoring {
+  func loadCount() throws -> MenuBarCount {
+    .today
   }
 
-  func saveIsEnabled(_ isEnabled: Bool) throws {}
+  func saveCount(_ count: MenuBarCount) throws {}
 }
 
 @MainActor
