@@ -7,7 +7,7 @@
   "e2e_required": false,
   "e2e_flows": [],
   "strictness": "block",
-  "reviewers": ["claude[bot]", "copilot-pull-request-reviewer[bot]"],
+  "reviewers": ["claude[bot]"],
   "commit_learnings": false,
   "auto_worktree": true,
   "screenshot_dir": ".verification",

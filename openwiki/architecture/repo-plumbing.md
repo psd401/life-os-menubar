@@ -30,6 +30,22 @@ Also on the repo: `claude-code-review.yml` (AI review on every PR) and
 `claude.yml` (responds to `@claude` mentions), both using
 `anthropics/claude-code-action`, plus GitHub's CodeQL default setup.
 
+The AI review has one behavior worth knowing: `claude-code-action` validates
+that the workflow file in the PR is **identical to the copy on the default
+branch**, and skips itself when it is not. So a PR that edits
+`claude-code-review.yml` gets a green `claude-review` check with no review
+posted — the job logs "Skipping action due to workflow validation". That is a
+deliberate safety measure, not a failure, and it is why the PR that first
+SHA-pinned these workflows could not be reviewed by Claude. Reviews resume on
+the next PR that leaves the workflow alone.
+
+`.psd/verify.json`'s `reviewers` therefore lists only `claude[bot]`. GitHub's
+Copilot code reviewer posted on PRs #13–#15 while the repo was under the
+`krishagel` account, but it is not configured for the repo under `psd401` —
+requesting it via the API succeeds and is silently ignored. Do not add a login
+to `reviewers` that cannot actually post; the watch-until-clean loop will spin
+on it.
+
 ### Actions must be SHA-pinned
 
 The `psd401` org sets `sha_pinning_required: true` on Actions. A workflow that
