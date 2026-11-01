@@ -7,7 +7,7 @@ public protocol GitHubIssueFetching: Sendable {
 public enum GitHubIssueClientError: LocalizedError, Equatable, Sendable {
   case emptyToken
   case invalidResponse
-  case missingRepository
+  case missingRepository(repository: String)
   case missingPageCursor
   case rejected
   case requestFailed(statusCode: Int)
@@ -20,8 +20,8 @@ public enum GitHubIssueClientError: LocalizedError, Equatable, Sendable {
       "Add a GitHub token in Settings before refreshing."
     case .invalidResponse:
       "GitHub returned an invalid issue response."
-    case .missingRepository:
-      "The GitHub token cannot read krishagel/life-os."
+    case .missingRepository(let repository):
+      "The GitHub token cannot read \(repository). Check the task repository in Settings."
     case .missingPageCursor:
       "GitHub returned an invalid pagination cursor."
     case .rejected:
@@ -39,19 +39,16 @@ public enum GitHubIssueClientError: LocalizedError, Equatable, Sendable {
 public struct GitHubGraphQLIssueClient: GitHubIssueFetching {
   private let session: URLSession
   private let endpoint: URL
-  private let owner: String
-  private let repository: String
+  private let repositoryStore: any TaskRepositoryStoring
 
   public init(
     session: URLSession = .shared,
     endpoint: URL = URL(string: "https://api.github.com/graphql")!,
-    owner: String = "krishagel",
-    repository: String = "life-os"
+    repositoryStore: any TaskRepositoryStoring = UserDefaultsTaskRepositoryStore()
   ) {
     self.session = session
     self.endpoint = endpoint
-    self.owner = owner
-    self.repository = repository
+    self.repositoryStore = repositoryStore
   }
 
   public func fetchIssues(token: String, updatedAfter: Date?) async throws -> [LifeOSIssue] {
@@ -60,13 +57,14 @@ public struct GitHubGraphQLIssueClient: GitHubIssueFetching {
       throw GitHubIssueClientError.emptyToken
     }
 
+    let taskRepository = try repositoryStore.requireRepository()
     var cursor: String?
     var issuesByNumber: [Int: LifeOSIssue] = [:]
 
     repeat {
       let variables = IssueQueryVariables(
-        owner: owner,
-        repository: repository,
+        owner: taskRepository.owner,
+        repository: taskRepository.name,
         cursor: cursor,
         updatedAfter: updatedAfter.map(Self.githubTimestamp),
         states: updatedAfter == nil ? ["OPEN"] : ["OPEN", "CLOSED"]
@@ -74,7 +72,7 @@ public struct GitHubGraphQLIssueClient: GitHubIssueFetching {
       let request = try makeRequest(token: trimmedToken, variables: variables)
       let response = try await perform(request)
       guard let repository = response.data?.repository else {
-        throw GitHubIssueClientError.missingRepository
+        throw GitHubIssueClientError.missingRepository(repository: taskRepository.slug)
       }
 
       for node in repository.issues.nodes {

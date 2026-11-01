@@ -15,10 +15,12 @@ inline detail and actions, and a global quick-capture hotkey. It is a read-mostl
 client over GitHub's API — GitHub stays the source of truth, and nothing here
 holds state you cannot rebuild from the repo.
 
-Today it reads `krishagel/life-os`. Making the task repo user-configurable is
-tracked in [#21](https://github.com/psd401/life-os-menubar/issues/21); until that
-lands, point it at your own repo by changing the `owner`/`repo` defaults in the
-clients under `Sources/LifeOSMenubarCore/`.
+You point it at your own task repo in Settings. What that repo has to look like
+— the label contract, the optional filter families, the optional Project v2 date
+fields, and a bootstrap script for a fresh repo — is documented in
+[the Life OS task-repo standard](docs/life-os-repo-standard.md). The app ships no
+default repository: an install with nothing configured says so and sends you to
+Settings.
 
 ## Requirements
 
@@ -84,11 +86,40 @@ Remove the old bundle first and copy with `ditto` rather than `cp -R`: copying a
 binaries and resources from the previous build inside the bundle and fails
 silently. This matters on every upgrade, not just the first install.
 
-Then open **Settings** from the panel and sign in — see
-[Signing in](#signing-in) for the two paths and what each one grants. Whichever
-path you use, the token is stored only in the macOS Keychain, never on disk in
-the clear and never in a log. Enable **Launch at Login** in Settings if you want
-it always running.
+### First run: connect a task repo
+
+The app has no task repository until you choose one, and the panel shows a setup
+card until you do.
+
+1. **Create or pick a task repo.** Any GitHub repo you can read, with issues
+   enabled — private is recommended. It needs no code.
+2. **Bootstrap its labels.** The app validates the label contract and never
+   creates it:
+
+   ```sh
+   # Preview the commands without touching the repo:
+   scripts/bootstrap-task-repo.sh --repo owner/repo --dry-run
+
+   # Create the 13 required labels:
+   scripts/bootstrap-task-repo.sh --repo owner/repo
+   ```
+
+   The copy-paste `gh label create` equivalent is in
+   [the standard](docs/life-os-repo-standard.md#6-bootstrap-a-fresh-repository).
+3. **Sign in.** Open **Settings** from the panel's `…` menu and either select
+   **Sign in with GitHub** or open **Advanced** and paste a token. See
+   [Signing in](#signing-in) for what each path grants. Either way, the token is
+   stored only in the macOS Keychain, never on disk in the clear and never in a
+   log.
+4. **Save the repo.** Under **Task repository**, enter `owner/repo` and select
+   **Save and validate repository**. Validation confirms the token can read the
+   repo and that every required label exists, and names anything missing. A repo
+   that fails validation is not saved.
+
+Enable **Launch at Login** in Settings if you want it always running.
+
+Full details, including the optional label families and Project v2 fields, are in
+[the Life OS task-repo standard](docs/life-os-repo-standard.md).
 
 **If nothing seems to happen:** that is expected. The app is an accessory
 application — no Dock icon, no app-switcher entry, no window on launch. Its only
@@ -154,8 +185,8 @@ advanced token path works regardless.
 
 ## Task sync
 
-The panel reads all open issues from `krishagel/life-os` through GitHub GraphQL
-and groups them into Inbox, Next, Active, Waiting, Scheduled, and Someday.
+The panel reads all open issues from your configured task repo through GitHub
+GraphQL and groups them into Inbox, Next, Active, Waiting, Scheduled, and Someday.
 Results are searchable by title and sorted by priority, then most-recent update.
 
 Tasks are cached at:
@@ -206,8 +237,8 @@ state are updated only after GitHub accepts a mutation.
 Choose a global shortcut in Settings, then use it from any app to open the
 keyboard-focused Quick Capture window. Enter a required title, optional notes,
 and optionally override the default P2 priority. Creating a task writes it to
-`krishagel/life-os` with `status:inbox`, `type:task`, `source:manual`, and the
-selected `priority:*` label. Failed requests keep the draft intact so they can
+the configured task repo with `status:inbox`, `type:task`, `source:manual`, and
+the selected `priority:*` label. Failed requests keep the draft intact so they can
 be retried; Escape cancels and clears the draft.
 
 ## Today and Project fields
@@ -228,6 +259,7 @@ sync. The badge can be disabled under **Settings → General**.
 
 ## Documentation
 
+- [docs/life-os-repo-standard.md](docs/life-os-repo-standard.md) — what a task repo must contain, and how to bootstrap one
 - [AGENTS.md](AGENTS.md) — build/test/lint commands, architecture map, PR evidence bar
 - [openwiki/](openwiki/index.md) — architecture notes and the decision record
 - [Contributing](https://github.com/psd401/.github/blob/main/CONTRIBUTING.md) and

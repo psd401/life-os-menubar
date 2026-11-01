@@ -16,7 +16,10 @@ and was merged into `main` (merge commit, history preserved) and deleted — see
 ## CI
 
 `.github/workflows/ci.yml` — `CI / Swift validation`, `xcode-27`, 20-minute
-timeout, triggered on `pull_request` and `push` to `main`. Four steps, in order:
+timeout, triggered on `pull_request` and `push` to `main`. A change that touches
+only docs (`**/*.md`, `openwiki/**`, `docs/**`, `.verification/**`, `LICENSE`)
+skips it, so docs don't spend macOS runner minutes. CodeQL default setup is not
+affected and still scans every PR. Four steps, in order:
 
 1. `swift format lint --strict --recursive Sources Tests Package.swift`
 2. `swift test`

@@ -4,7 +4,7 @@ okf_version: "0.1"
 
 # 0005 — Make the task repo user-configurable and publish the repo standard
 
-**Date:** 2026-10-31 · **Status:** Accepted, not implemented
+**Date:** 2026-10-31 · **Status:** Implemented 2026-11-01
 ([#21](https://github.com/psd401/life-os-menubar/issues/21))
 
 ## Context
@@ -64,3 +64,30 @@ else:
   deliberately — do not rename it as drive-by cleanup.
 - README's "change the defaults in the clients" workaround is removed once this
   lands.
+
+## How it landed
+
+- `TaskRepository` (`owner`/`name`, parsed from `owner/repo` or a pasted
+  `github.com` URL) plus `TaskRepositoryStoring` /
+  `UserDefaultsTaskRepositoryStore`, keyed `taskRepository`. The slug is not a
+  secret, so it sits with the other preferences rather than in the Keychain.
+- All four clients resolve the repo per request via `requireRepository()`, so a
+  changed setting applies without rebuilding the composition root, and an
+  unconfigured install fails with
+  `TaskRepositoryConfigurationError.notConfigured` **before** any network call.
+- `TaskRepositoryValidator` lists the repo's labels over REST. One request proves
+  both halves: 404/403 means the token cannot reach the repo, and the body says
+  whether it was bootstrapped. A repo that fails is never saved.
+- The contradiction in #21 was resolved in favour of its Definition of Done: no
+  hardcoded owner/repo anywhere in `Sources/`, so an **existing install with no
+  configured repo gets the first-run state**, not a silent fallback to
+  `krishagel/life-os`.
+- The Keychain service name was left alone, exactly as the consequence above
+  warned.
+- Changing the repo clears the issue cache, which the original decision did not
+  mention: the cache is keyed by issue number alone, so two repos' tasks would
+  otherwise merge.
+- `docs/life-os-repo-standard.md` and `scripts/bootstrap-task-repo.sh`
+  (`--dry-run` prints the `gh label create` commands without contacting GitHub).
+  A swift-testing test asserts the script and `LabelRules.requiredLabelNames`
+  declare the same thirteen labels, so the two cannot drift.

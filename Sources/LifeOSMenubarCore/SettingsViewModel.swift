@@ -17,10 +17,20 @@ public enum DeviceFlowState: Equatable, Sendable {
   case failed(message: String)
 }
 
+public enum TaskRepositoryState: Equatable, Sendable {
+  case idle
+  case validating
+  case valid(slug: String)
+  case invalid(message: String)
+}
+
 @MainActor
 public final class SettingsViewModel: ObservableObject {
   @Published public var token: String
   @Published public private(set) var validationState: TokenValidationState = .idle
+  @Published public var repositorySlug: String
+  @Published public private(set) var repositoryState: TaskRepositoryState = .idle
+  @Published public private(set) var isRepositoryConfigured: Bool
   @Published public private(set) var isLaunchAtLoginEnabled: Bool
   @Published public private(set) var isTodayBadgeEnabled: Bool
   @Published public private(set) var persistenceError: String?
@@ -35,8 +45,12 @@ public final class SettingsViewModel: ObservableObject {
   private let deviceFlow: any DeviceFlowAuthorizing
   private let verificationPageOpener: @MainActor @Sendable (URL) -> Void
   private let onSignOut: @MainActor () -> Void
+  private let repositoryStore: any TaskRepositoryStoring
+  private let repositoryValidator: any TaskRepositoryValidating
+  private let onRepositoryChange: @MainActor (TaskRepository?) -> Void
   private var validationGeneration = 0
   private var deviceFlowGeneration = 0
+  private var repositoryValidationGeneration = 0
 
   public init(
     tokenStore: any TokenStoring,
@@ -51,7 +65,10 @@ public final class SettingsViewModel: ObservableObject {
     // Signing out has to reach beyond this view model: tasks synced by the
     // account being signed out of must not stay on screen or on disk. The
     // composition root wires this to the task list.
-    onSignOut: @escaping @MainActor () -> Void = {}
+    onSignOut: @escaping @MainActor () -> Void = {},
+    repositoryStore: any TaskRepositoryStoring = UserDefaultsTaskRepositoryStore(),
+    repositoryValidator: any TaskRepositoryValidating = TaskRepositoryValidator(),
+    onRepositoryChange: @escaping @MainActor (TaskRepository?) -> Void = { _ in }
   ) {
     self.tokenStore = tokenStore
     self.validator = validator
@@ -60,6 +77,9 @@ public final class SettingsViewModel: ObservableObject {
     self.deviceFlow = deviceFlow
     self.verificationPageOpener = verificationPageOpener
     self.onSignOut = onSignOut
+    self.repositoryStore = repositoryStore
+    self.repositoryValidator = repositoryValidator
+    self.onRepositoryChange = onRepositoryChange
     self.isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
 
     do {
@@ -75,6 +95,10 @@ public final class SettingsViewModel: ObservableObject {
       self.isTodayBadgeEnabled = true
       self.badgePreferenceError = error.localizedDescription
     }
+
+    let configuredRepository = try? repositoryStore.loadRepository()
+    self.repositorySlug = configuredRepository?.slug ?? ""
+    self.isRepositoryConfigured = configuredRepository != nil
   }
 
   /// True while a credential is stored, whichever path produced it — including a
@@ -261,6 +285,89 @@ public final class SettingsViewModel: ObservableObject {
     } catch {
       persistenceError = error.localizedDescription
     }
+  }
+
+  /// Validates the typed `owner/repo` against GitHub and saves it only if the
+  /// repo exists, the token can read it, and every required label definition is
+  /// already there. A repo that fails any of those is never written to the
+  /// store, so the app cannot start syncing against something it will misread —
+  /// see [decision 0005](../../openwiki/decisions/0005-configurable-task-repo.md).
+  public func saveAndValidateRepository() async {
+    repositoryValidationGeneration += 1
+    let generation = repositoryValidationGeneration
+
+    let candidate: TaskRepository
+    do {
+      candidate = try TaskRepository.parse(repositorySlug)
+    } catch {
+      repositoryState = .invalid(message: error.localizedDescription)
+      return
+    }
+
+    let candidateToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !candidateToken.isEmpty else {
+      repositoryState = .invalid(
+        message: TaskRepositoryValidationError.emptyToken.localizedDescription
+      )
+      return
+    }
+
+    repositoryState = .validating
+    let report: TaskRepositoryValidationReport
+    do {
+      report = try await repositoryValidator.validate(
+        token: candidateToken,
+        repository: candidate
+      )
+    } catch {
+      guard generation == repositoryValidationGeneration else {
+        return
+      }
+      repositoryState = .invalid(message: error.localizedDescription)
+      return
+    }
+
+    guard generation == repositoryValidationGeneration else {
+      return
+    }
+    guard report.isConforming else {
+      repositoryState = .invalid(message: Self.missingLabelsMessage(report.missingLabels))
+      return
+    }
+
+    do {
+      try repositoryStore.saveRepository(candidate)
+    } catch {
+      repositoryState = .invalid(message: error.localizedDescription)
+      return
+    }
+
+    repositorySlug = candidate.slug
+    isRepositoryConfigured = true
+    repositoryState = .valid(slug: candidate.slug)
+    onRepositoryChange(candidate)
+  }
+
+  public func clearRepository() {
+    do {
+      try repositoryStore.clearRepository()
+    } catch {
+      repositoryState = .invalid(message: error.localizedDescription)
+      return
+    }
+
+    repositoryValidationGeneration += 1
+    repositorySlug = ""
+    isRepositoryConfigured = false
+    repositoryState = .idle
+    onRepositoryChange(nil)
+  }
+
+  private static func missingLabelsMessage(_ missingLabels: [String]) -> String {
+    "This repository is missing \(missingLabels.count) required "
+      + (missingLabels.count == 1 ? "label" : "labels")
+      + ": \(missingLabels.joined(separator: ", ")). "
+      + "Run the bootstrap in docs/life-os-repo-standard.md, then validate again."
   }
 
   public func setLaunchAtLoginEnabled(_ isEnabled: Bool) {

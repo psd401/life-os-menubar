@@ -158,18 +158,70 @@ struct GitHubProjectFieldClientTests {
     }
   }
 
-  private func makeProjectFieldClient() -> GitHubGraphQLProjectFieldClient {
+  @Test
+  func sendsTheConfiguredRepositoryRatherThanAnyBuiltInDefault() async throws {
+    ProjectFieldURLProtocolStub.handler = { request in
+      let payload = try JSONDecoder().decode(
+        ProjectFieldRequestPayload.self,
+        from: try projectFieldRequestBody(from: request)
+      )
+      #expect(payload.variables.owner == "acme")
+      #expect(payload.variables.repository == "work-tasks")
+      return try projectFieldResponse(
+        for: request,
+        json: """
+          {
+            "data": {
+              "repository": {
+                "issues": {
+                  "nodes": [],
+                  "pageInfo": {"hasNextPage": false, "endCursor": null}
+                }
+              }
+            }
+          }
+          """
+      )
+    }
+
+    let client = makeProjectFieldClient(
+      repositoryStore: InMemoryTaskRepositoryStore(
+        repository: TaskRepository(owner: "acme", name: "work-tasks")
+      )
+    )
+    _ = try await client.fetchProjectFields(token: "test-token")
+  }
+
+  @Test
+  func refusesToGuessARepositoryWhenNoneIsConfigured() async {
+    ProjectFieldURLProtocolStub.handler = { _ in
+      Issue.record("An unconfigured install must not reach GitHub.")
+      throw URLError(.badURL)
+    }
+
+    await #expect(throws: TaskRepositoryConfigurationError.notConfigured) {
+      try await makeProjectFieldClient(repositoryStore: InMemoryTaskRepositoryStore())
+        .fetchProjectFields(token: "test-token")
+    }
+  }
+
+  private func makeProjectFieldClient(
+    repositoryStore: any TaskRepositoryStoring = TaskRepositoryFixture.store
+  ) -> GitHubGraphQLProjectFieldClient {
     let configuration = URLSessionConfiguration.ephemeral
     configuration.protocolClasses = [ProjectFieldURLProtocolStub.self]
     return GitHubGraphQLProjectFieldClient(
       session: URLSession(configuration: configuration),
-      endpoint: URL(string: "https://example.test/graphql")!
+      endpoint: URL(string: "https://example.test/graphql")!,
+      repositoryStore: repositoryStore
     )
   }
 }
 
 private struct ProjectFieldRequestPayload: Decodable {
   struct Variables: Decodable {
+    let owner: String
+    let repository: String
     let cursor: String?
   }
 
