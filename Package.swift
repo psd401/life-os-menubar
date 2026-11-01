@@ -1,11 +1,11 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 
 import PackageDescription
 
 let package = Package(
   name: "LifeOSMenubar",
   platforms: [
-    .macOS(.v15)
+    .macOS(.v26)
   ],
   products: [
     .library(
@@ -21,7 +21,8 @@ let package = Package(
     .package(
       url: "https://github.com/sindresorhus/KeyboardShortcuts",
       exact: "3.1.0"
-    )
+    ),
+    .package(path: "Vendor/NexusKit"),
   ],
   targets: [
     .target(
@@ -33,6 +34,7 @@ let package = Package(
       dependencies: [
         "LifeOSMenubarCore",
         .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+        .product(name: "NexusKit", package: "NexusKit"),
       ],
       path: "Sources/LifeOSMenubarApp"
     ),

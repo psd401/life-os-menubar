@@ -1,5 +1,6 @@
 import AppKit
 import LifeOSMenubarCore
+import NexusKit
 import SwiftUI
 
 @MainActor
@@ -11,17 +12,23 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     taskListViewModel: TaskListViewModel
   ) {
     let window = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 520, height: 430),
+      contentRect: NSRect(
+        x: 0,
+        y: 0,
+        width: SettingsMetrics.width,
+        height: SettingsMetrics.height
+      ),
       styleMask: [.titled, .closable, .miniaturizable],
       backing: .buffered,
       defer: false
     )
-    window.title = "Life OS Menubar Settings"
+    window.title = "Life OS Menubar settings"
     window.contentView = NSHostingView(
       rootView: SettingsView(
         viewModel: viewModel,
         taskListViewModel: taskListViewModel
       )
+      .nexusTheme(family: .nexus)
     )
     window.center()
     window.isReleasedWhenClosed = false

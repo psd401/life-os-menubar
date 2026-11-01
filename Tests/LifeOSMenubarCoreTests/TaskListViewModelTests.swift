@@ -273,6 +273,48 @@ struct TaskListViewModelTests {
     #expect(viewModel.issues.isEmpty)
     #expect(try cache.load()?.issues.isEmpty == true)
   }
+
+  /// The panel quick-add composer relies on reconcile alone to surface a brand new
+  /// issue, with no refresh round trip, so an unknown issue number must be inserted
+  /// into the visible list, land in the Inbox section, and be written to the cache.
+  @Test
+  func reconcileInsertsUnknownIssueIntoInboxSectionAndCache() throws {
+    let existing = viewModelTestIssue(number: 10)
+    let cache = ViewModelCacheStore(
+      snapshot: IssueCacheSnapshot(
+        issues: [existing],
+        lastSyncedAt: Date(timeIntervalSince1970: 100),
+        lastFullSyncedAt: Date(timeIntervalSince1970: 50)
+      )
+    )
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: ViewModelFilterStore()
+    )
+    let created = LifeOSIssue(
+      number: 11,
+      title: "Composed task",
+      body: "",
+      labels: [
+        GitHubLabel(name: LabelRules.defaultStatus, color: "ffffff"),
+        GitHubLabel(name: "type:task", color: "ffffff"),
+        GitHubLabel(name: "source:manual", color: "ffffff"),
+        GitHubLabel(name: LabelRules.defaultPriority, color: "ffffff"),
+      ],
+      updatedAt: Date(timeIntervalSince1970: 300)
+    )
+
+    viewModel.reconcileRemoteIssue(created)
+
+    #expect(viewModel.issues.map(\.number) == [10, 11])
+    let inboxSection = try #require(viewModel.sections.first { $0.status == .inbox })
+    #expect(inboxSection.issues.contains(created))
+    #expect(try cache.load()?.issues.map(\.number) == [10, 11])
+  }
 }
 
 private func viewModelTestIssue(number: Int) -> LifeOSIssue {

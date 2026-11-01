@@ -22,8 +22,9 @@ clients under `Sources/LifeOSMenubarCore/`.
 
 ## Requirements
 
-- macOS 15 or later
-- Xcode 16 or later with Swift 6
+- macOS 26 or later — the NexusKit design-system package sets this floor
+  ([decision 0004](openwiki/decisions/0004-macos-26-floor.md))
+- Xcode 26 or later with Swift 6.2
 - A GitHub fine-grained personal access token with access to your task repo, and
   the `read:project` scope if you want the Today view's Project dates
 

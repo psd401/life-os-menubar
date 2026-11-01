@@ -16,13 +16,29 @@ running UI. Anything with a branch in it belongs in Core; the App target is
 composition and presentation only. The App target is deliberately untested, so
 putting logic there means putting it beyond the test gate.
 
-`Package.swift` (swift-tools 6.0, platform `.macOS(.v15)`) and the Xcode project
+`Package.swift` (swift-tools 6.2, platform `.macOS(.v26)`) and the Xcode project
 build the same sources. The Xcode project is what produces the `.app`; SwiftPM is
 what makes `swift test` fast. Both must stay green — see
 [repo-plumbing.md](repo-plumbing.md).
 
-One external dependency: `sindresorhus/KeyboardShortcuts`, pinned `exact: "2.3.0"`,
-used only for the global quick-capture hotkey.
+Two dependencies:
+
+- `sindresorhus/KeyboardShortcuts`, pinned `exact: "2.3.0"`, used only for the
+  global quick-capture hotkey.
+- **NexusKit**, vendored at `Vendor/NexusKit/` as a local SwiftPM package — the
+  Nexus design system's SwiftUI tokens and components. It is a verbatim copy of
+  `design-system/nexus/apple/NexusKit` from `psd401/psd-dev-standards`;
+  [`Vendor/NexusKit/VENDORED.md`](../../Vendor/NexusKit/VENDORED.md) records the
+  source commit and the refresh procedure. **Nothing in that directory is ever
+  hand-edited** — changes flow one way, from the design system down. NexusKit is
+  also where the macOS 26 floor comes from
+  ([decision 0004](../decisions/0004-macos-26-floor.md)).
+
+The App target takes every color, font, spacing, radius, and motion value from
+NexusKit (`NexusFont`, `NexusSpace`, `NexusRadius`, `NexusSize`, `NexusMotion`,
+and the palette on `@Environment(\.nexus)`). `LifeOSMenubarCore` does not import
+NexusKit and must not: the design system is presentation, and Core has no
+presentation in it.
 
 ## Core, by layer
 
@@ -49,7 +65,9 @@ constructed. `applicationDidFinishLaunching` sets the activation policy to
 `.accessory`, builds the stores, clients, sync engine, and view models, and wires
 them into:
 
-- `StatusItemController` — the menu bar item and the Today count badge
+- `StatusItemController` — the menu bar item and the Today count badge. Its
+  badge renderer is deliberately outside the Nexus palette: the image is a
+  **template** image, so its black is a mask macOS tints to match the menu bar
 - `PanelController` + `PanelView` — the task panel, with `TaskDetailView` inside
 - `SettingsWindowController` + `SettingsView` — token entry, launch at login, badge toggle
 - `QuickCaptureWindowController` + `QuickCaptureView` — the global-hotkey capture window

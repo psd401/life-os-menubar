@@ -49,8 +49,9 @@ the same sources; the Xcode project is what produces the shippable `.app`.
 
 ```
 Sources/LifeOSMenubarCore/   → library target. No AppKit/SwiftUI. All testable logic.
-Sources/LifeOSMenubarApp/    → executable target. AppKit + SwiftUI only. Depends on Core.
+Sources/LifeOSMenubarApp/    → executable target. AppKit + SwiftUI only. Depends on Core and NexusKit.
 Tests/LifeOSMenubarCoreTests/ → swift-testing suites. Core only; the App target is untested by design.
+Vendor/NexusKit/             → vendored design system. NEVER hand-edit; see Vendor/NexusKit/VENDORED.md.
 Resources/Info.plist         → LSUIElement = true (accessory app, no Dock icon)
 ```
 
@@ -75,6 +76,21 @@ State on disk: `~/Library/Application Support/LifeOSMenubar/{issues,filters}.jso
 
 ## Rules that are not negotiable
 
+- **Design system:** every color, font, spacing, radius, and motion value in the
+  App target comes from NexusKit — `NexusFont`, `NexusSpace`, `NexusRadius`,
+  `NexusSize`, `NexusMotion`, and the palette on `@Environment(\.nexus)`. No raw
+  hex, font family, or pixel value where a token exists; the two documented
+  exceptions are the 1pt `line` hairline and the menu bar's template image.
+  `.nexusTheme(family: .nexus)` is applied once per hosted SwiftUI tree, in the
+  window/popover controller, never inside the view itself — the modifier writes
+  the palette into its *children's* environment.
+- **Vendored code is read-only.** Nothing under `Vendor/` is ever hand-edited.
+  Changes flow one way: design-system artifact → `psd-dev-standards` → here.
+  Refresh with the recipe in `Vendor/NexusKit/VENDORED.md` and record the new
+  source commit SHA.
+- **Copy follows the Nexus writing rules:** sentence case, no emoji, buttons are
+  verbs with objects (`Add task`, `Close task`), and a status color is always
+  paired with a word or an icon.
 - **Secrets:** the GitHub token lives only in the macOS Keychain
   (`KeychainTokenStore`). Never a `.env`, a plist, a default, or a log line
   (standard 04, rule 15a).
