@@ -15,7 +15,7 @@ and was merged into `main` (merge commit, history preserved) and deleted — see
 
 ## CI
 
-`.github/workflows/ci.yml` — `CI / Swift validation`, `macos-15`, 20-minute
+`.github/workflows/ci.yml` — `CI / Swift validation`, `macos-26`, 20-minute
 timeout, triggered on `pull_request` and `push` to `main`. Four steps, in order:
 
 1. `swift format lint --strict --recursive Sources Tests Package.swift`
@@ -73,7 +73,7 @@ startup.
 
 | Ecosystem | What it updates | Commit prefix |
 |-----------|-----------------|---------------|
-| `swift` | the SwiftPM dependency (`KeyboardShortcuts`), via `Package.resolved` | `chore(deps)` |
+| `swift` | the remote SwiftPM dependency (`KeyboardShortcuts`), via `Package.resolved` | `chore(deps)` |
 | `github-actions` | the pinned action SHAs in `.github/workflows/` | `chore(ci)` |
 
 `target-branch` is deliberately **not** set. `main` is the default branch so it
@@ -83,6 +83,11 @@ security updates for that ecosystem, which is a real loss for no gain.
 Note that `Package.swift` pins `KeyboardShortcuts` with `exact:`, so a Dependabot
 bump has to change `Package.swift` as well as the resolved files — review those
 PRs rather than merging them blind.
+
+Dependabot does **not** see NexusKit. It is a vendored local package
+(`.package(path: "Vendor/NexusKit")`), not a resolved remote one, so refreshing
+it is a manual step — the procedure and the recorded source commit are in
+[`Vendor/NexusKit/VENDORED.md`](../../Vendor/NexusKit/VENDORED.md).
 
 ## The verify gate
 

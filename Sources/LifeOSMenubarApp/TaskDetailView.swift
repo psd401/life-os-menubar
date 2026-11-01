@@ -1,8 +1,10 @@
 import LifeOSMenubarCore
+import NexusKit
 import SwiftUI
 
 struct TaskDetailView: View {
   @StateObject private var viewModel: TaskDetailViewModel
+  @Environment(\.nexus) private var palette
   @State private var showsCloseConfirmation = false
 
   let token: String
@@ -33,27 +35,26 @@ struct TaskDetailView: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: NexusSpace.s3) {
       header
 
       errorBanner
 
       ScrollView {
-        LazyVStack(alignment: .leading, spacing: 18) {
+        LazyVStack(alignment: .leading, spacing: NexusSpace.s5) {
           actions
           labels
           bodySection
           commentsSection
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 2)
+        .padding(.vertical, NexusSpace.s0_5)
       }
 
-      Divider()
       commentComposer
     }
-    .padding(16)
-    .frame(width: 460, height: 620)
+    .padding(NexusSpace.s4)
+    .frame(width: PanelMetrics.width, height: PanelMetrics.height)
     .task {
       await loadDetail()
     }
@@ -62,7 +63,7 @@ struct TaskDetailView: View {
       isPresented: $showsCloseConfirmation,
       titleVisibility: .visible
     ) {
-      Button("Mark done and close", role: .destructive) {
+      Button("Mark task done and close it", role: .destructive) {
         Task {
           if let updatedIssue = await viewModel.close(token: token) {
             onIssueUpdated(updatedIssue)
@@ -70,7 +71,7 @@ struct TaskDetailView: View {
           }
         }
       }
-      Button("Cancel", role: .cancel) {}
+      Button("Keep task open", role: .cancel) {}
     } message: {
       Text("This replaces the current status with status:done and closes the issue on GitHub.")
     }
@@ -79,34 +80,46 @@ struct TaskDetailView: View {
   @ViewBuilder
   private var errorBanner: some View {
     if let errorMessage = viewModel.errorMessage {
-      HStack(alignment: .firstTextBaseline, spacing: 8) {
-        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-          .font(.caption)
-          .foregroundStyle(.orange)
-          .fixedSize(horizontal: false, vertical: true)
-          .accessibilityLabel("Task error: \(errorMessage)")
+      HStack(alignment: .firstTextBaseline, spacing: NexusSpace.s2) {
+        HStack(alignment: .firstTextBaseline, spacing: NexusSpace.s2) {
+          Image(systemName: "exclamationmark.triangle")
+            .font(.system(size: NexusSize.iconSm, weight: .regular))
+            .accessibilityHidden(true)
+          Text(errorMessage)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(NexusFont.caption1)
+        .foregroundStyle(palette.warningInk)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Task error: \(errorMessage)")
 
         Spacer()
 
         if !viewModel.hasLoadedDetail {
-          Button("Retry") {
+          Button("Retry loading") {
             Task {
               await loadDetail()
             }
           }
+          .buttonStyle(.bordered)
           .disabled(viewModel.isLoading)
           .controlSize(.small)
           .accessibilityLabel("Retry loading task details")
         }
       }
+      .padding(.horizontal, NexusSpace.s3)
+      .padding(.vertical, NexusSpace.s2)
+      .background(palette.warningSoft, in: RoundedRectangle(cornerRadius: NexusRadius.sm))
     }
   }
 
   private var header: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: NexusSpace.s2) {
       HStack {
         Button(action: onBack) {
-          Label("Tasks", systemImage: "chevron.left")
+          Label("Back to tasks", systemImage: "chevron.left")
+            .font(NexusFont.body)
+            .foregroundStyle(palette.ink)
         }
         .buttonStyle(.plain)
 
@@ -118,18 +131,22 @@ struct TaskDetailView: View {
             .accessibilityLabel(viewModel.isLoading ? "Loading task" : "Updating task")
         }
       }
+      .padding(.horizontal, NexusSpace.s3)
+      .padding(.vertical, NexusSpace.s2)
+      .nexusGlass(in: RoundedRectangle(cornerRadius: NexusRadius.md))
 
       Text("#\(viewModel.issue.number)")
-        .font(.caption.monospacedDigit())
-        .foregroundStyle(.secondary)
+        .font(NexusFont.code)
+        .foregroundStyle(palette.inkMuted)
       Text(viewModel.issue.title)
-        .font(.title3.weight(.semibold))
+        .font(NexusFont.title1)
+        .foregroundStyle(palette.ink)
         .textSelection(.enabled)
     }
   }
 
   private var actions: some View {
-    HStack(spacing: 8) {
+    HStack(spacing: NexusSpace.s2) {
       Menu {
         ForEach(TaskStatusSection.allCases) { status in
           Button {
@@ -151,6 +168,7 @@ struct TaskDetailView: View {
         }
       } label: {
         Label(statusTitle, systemImage: "arrow.triangle.2.circlepath")
+          .font(NexusFont.body)
       }
       .disabled(viewModel.isMutating || !viewModel.hasLoadedDetail)
       .accessibilityLabel("Change status. Current status: \(statusTitle)")
@@ -176,6 +194,7 @@ struct TaskDetailView: View {
         }
       } label: {
         Label(priorityTitle(currentPriority), systemImage: "flag")
+          .font(NexusFont.body)
       }
       .disabled(viewModel.isMutating || !viewModel.hasLoadedDetail)
       .accessibilityLabel("Change priority. Current priority: \(priorityTitle(currentPriority))")
@@ -206,16 +225,18 @@ struct TaskDetailView: View {
           }
         }
       } label: {
-        Label("Labels", systemImage: "tag")
+        Label("Edit labels", systemImage: "tag")
+          .font(NexusFont.body)
       }
       .disabled(viewModel.isMutating || !viewModel.hasLoadedDetail)
       .accessibilityLabel("Edit non-contract labels")
 
       Spacer()
 
-      Button("Close", role: .destructive) {
+      Button("Close task", role: .destructive) {
         showsCloseConfirmation = true
       }
+      .buttonStyle(.bordered)
       .disabled(
         viewModel.isMutating || !viewModel.hasLoadedDetail || viewModel.issue.state == .closed
       )
@@ -225,15 +246,16 @@ struct TaskDetailView: View {
   }
 
   private var labels: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: NexusSpace.s2) {
       Text("Labels")
-        .font(.headline)
+        .font(NexusFont.headline)
+        .foregroundStyle(palette.ink)
 
       ForEach(labelGroups) { group in
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: NexusSpace.s1) {
           Text(group.title)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
+            .font(NexusFont.caption2)
+            .foregroundStyle(palette.inkMuted)
           FlowLabelView(labels: group.labels)
         }
       }
@@ -241,14 +263,15 @@ struct TaskDetailView: View {
   }
 
   private var bodySection: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: NexusSpace.s2) {
       Text("Details")
-        .font(.headline)
+        .font(NexusFont.headline)
+        .foregroundStyle(palette.ink)
 
       if viewModel.issue.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         Text("No description")
-          .foregroundStyle(.secondary)
-          .italic()
+          .font(NexusFont.body)
+          .foregroundStyle(palette.inkMuted)
       } else {
         MarkdownBlockView(markdown: viewModel.issue.body)
       }
@@ -256,53 +279,70 @@ struct TaskDetailView: View {
   }
 
   private var commentsSection: some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: NexusSpace.s3) {
       Text("Comments (\(viewModel.comments.count))")
-        .font(.headline)
+        .font(NexusFont.headline)
+        .foregroundStyle(palette.ink)
 
       if viewModel.comments.isEmpty {
         Text(viewModel.isLoading ? "Loading comments…" : "No comments")
-          .foregroundStyle(.secondary)
+          .font(NexusFont.body)
+          .foregroundStyle(palette.inkMuted)
       } else {
         ForEach(viewModel.comments) { comment in
-          VStack(alignment: .leading, spacing: 5) {
+          VStack(alignment: .leading, spacing: NexusSpace.s1) {
             HStack {
               Text("@\(comment.authorLogin)")
-                .font(.caption.weight(.semibold))
+                .font(NexusFont.caption2)
+                .foregroundStyle(palette.ink)
               Spacer()
               Text(
                 comment.createdAt,
                 format: .dateTime.year().month().day().hour().minute()
               )
-              .font(.caption)
-              .foregroundStyle(.secondary)
+              .font(NexusFont.caption1)
+              .foregroundStyle(palette.inkMuted)
             }
             MarkdownBlockView(markdown: comment.body, compact: true)
           }
-          .padding(10)
-          .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+          .padding(NexusSpace.s3)
+          .background(
+            palette.surfaceRaised,
+            in: RoundedRectangle(cornerRadius: NexusRadius.sm)
+          )
+          .overlay(
+            RoundedRectangle(cornerRadius: NexusRadius.sm)
+              .stroke(palette.line, lineWidth: 1)
+          )
         }
       }
     }
   }
 
   private var commentComposer: some View {
-    VStack(alignment: .trailing, spacing: 8) {
+    VStack(alignment: .trailing, spacing: NexusSpace.s2) {
       TextEditor(text: $viewModel.commentDraft)
-        .font(.body)
-        .frame(minHeight: 54, maxHeight: 76)
-        .padding(4)
+        .font(NexusFont.body)
+        .scrollContentBackground(.hidden)
+        .frame(minHeight: NexusSize.controlLg, maxHeight: NexusSize.headerHeight + NexusSpace.s5)
+        .padding(NexusSpace.s1)
         .background(
-          RoundedRectangle(cornerRadius: 6)
-            .stroke(Color.secondary.opacity(0.35))
+          palette.surfaceRaised,
+          in: RoundedRectangle(cornerRadius: NexusRadius.sm)
+        )
+        .overlay(
+          RoundedRectangle(cornerRadius: NexusRadius.sm)
+            .stroke(palette.line, lineWidth: 1)
         )
         .accessibilityLabel("New comment")
 
-      Button("Post Comment") {
+      Button("Post comment") {
         Task {
           _ = await viewModel.addComment(token: token)
         }
       }
+      .buttonStyle(.borderedProminent)
+      .tint(palette.action)
       .disabled(
         viewModel.commentDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
           || viewModel.isMutating
@@ -400,24 +440,28 @@ private struct FlowLabelView: View {
   let labels: [GitHubLabel]
 
   var body: some View {
-    ViewThatFits(in: .horizontal) {
-      HStack(spacing: 5) {
-        chips
-      }
-      VStack(alignment: .leading, spacing: 5) {
-        chips
+    NexusFlowLayout(spacing: NexusSpace.s1) {
+      ForEach(labels, id: \.name) { label in
+        NexusBadge(label.name, tone: label.name.nexusLabelTone)
       }
     }
   }
+}
 
-  @ViewBuilder
-  private var chips: some View {
-    ForEach(labels, id: \.name) { label in
-      Text(label.name)
-        .font(.caption)
-        .padding(.horizontal, 7)
-        .padding(.vertical, 3)
-        .background(Color.secondary.opacity(0.14), in: Capsule())
+extension String {
+  /// Contract labels carry their Nexus semantics: `attention` for the Inbox
+  /// (needs a decision), `flow` for work in flight, `info` for what is lined
+  /// up. Everything else is neutral — the label text is always the word.
+  fileprivate var nexusLabelTone: NexusBadge.Tone {
+    switch self {
+    case "status:inbox":
+      return .attention
+    case "status:active":
+      return .flow
+    case "status:next", "status:scheduled":
+      return .info
+    default:
+      return .neutral
     }
   }
 }
@@ -427,7 +471,7 @@ private struct MarkdownBlockView: View {
   var compact = false
 
   var body: some View {
-    VStack(alignment: .leading, spacing: compact ? 4 : 7) {
+    VStack(alignment: .leading, spacing: compact ? NexusSpace.s1 : NexusSpace.s2) {
       ForEach(Array(markdown.components(separatedBy: .newlines).enumerated()), id: \.offset) {
         line in
         block(for: line.element)
@@ -441,35 +485,41 @@ private struct MarkdownBlockView: View {
     let trimmed = line.trimmingCharacters(in: .whitespaces)
     if trimmed.isEmpty {
       Spacer()
-        .frame(height: compact ? 2 : 5)
+        .frame(height: compact ? NexusSpace.s0_5 : NexusSpace.s1)
     } else if trimmed.hasPrefix("### ") {
       Text(inlineMarkdown(String(trimmed.dropFirst(4))))
-        .font(.subheadline.weight(.semibold))
+        .font(NexusFont.headline)
     } else if trimmed.hasPrefix("## ") {
       Text(inlineMarkdown(String(trimmed.dropFirst(3))))
-        .font(.headline)
+        .font(NexusFont.title3)
     } else if trimmed.hasPrefix("# ") {
       Text(inlineMarkdown(String(trimmed.dropFirst(2))))
-        .font(.title3.weight(.semibold))
+        .font(NexusFont.title2)
     } else if let checklist = checklistItem(from: trimmed) {
-      HStack(alignment: .firstTextBaseline, spacing: 7) {
+      HStack(alignment: .firstTextBaseline, spacing: NexusSpace.s2) {
         Image(systemName: checklist.isChecked ? "checkmark.square" : "square")
+          .font(.system(size: NexusSize.iconSm, weight: .regular))
           .accessibilityLabel(checklist.isChecked ? "Completed" : "Not completed")
         Text(inlineMarkdown(checklist.text))
+          .font(NexusFont.body)
       }
     } else if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") {
-      HStack(alignment: .firstTextBaseline, spacing: 7) {
+      HStack(alignment: .firstTextBaseline, spacing: NexusSpace.s2) {
         Text("•")
+          .font(NexusFont.body)
         Text(inlineMarkdown(String(trimmed.dropFirst(2))))
+          .font(NexusFont.body)
       }
     } else if let orderedItem = MarkdownLineParser.orderedListItem(from: trimmed) {
-      HStack(alignment: .firstTextBaseline, spacing: 7) {
+      HStack(alignment: .firstTextBaseline, spacing: NexusSpace.s2) {
         Text(orderedItem.marker)
-          .monospacedDigit()
+          .font(NexusFont.code)
         Text(inlineMarkdown(orderedItem.text))
+          .font(NexusFont.body)
       }
     } else {
       Text(inlineMarkdown(trimmed))
+        .font(NexusFont.body)
     }
   }
 

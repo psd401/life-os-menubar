@@ -1,5 +1,6 @@
 import AppKit
 import LifeOSMenubarCore
+import NexusKit
 import SwiftUI
 
 @MainActor
@@ -18,12 +19,28 @@ final class QuickCaptureWindowController: NSWindowController, NSWindowDelegate {
     self.onCreated = onCreated
 
     let window = QuickCaptureWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 440, height: 360),
-      styleMask: [.titled, .closable],
+      contentRect: NSRect(x: 0, y: 0, width: QuickCaptureMetrics.width, height: 360),
+      styleMask: [.titled, .closable, .fullSizeContentView],
       backing: .buffered,
       defer: false
     )
-    window.title = "Quick Capture"
+    // The Nexus `MacQuickAsk` pattern is a floating bar, not a titled document
+    // window, so the chrome is hidden and the SwiftUI content fills the frame.
+    window.titleVisibility = .hidden
+    window.titlebarAppearsTransparent = true
+    window.isMovableByWindowBackground = true
+    // Two deliberate deviations from `MacQuickAsk`, both recorded in openwiki
+    // decision 0003:
+    //
+    // 1. The window stays activating rather than `.nonactivatingPanel`. Capture
+    //    is keyboard-first and the title field has to take first responder the
+    //    moment the hotkey fires.
+    // 2. The window stays opaque rather than showing the desktop through the
+    //    bar. NexusKit's `.nexusTheme` paints `surfaceCanvas` behind its
+    //    content unconditionally, so a see-through bar would mean editing a
+    //    vendored file. Glass is applied where the pattern cares about it — the
+    //    ask row — and the rest of the content sits on paper.
+    window.setAccessibilityLabel("Quick capture")
     window.center()
     window.isReleasedWhenClosed = false
     window.level = .floating
@@ -45,6 +62,7 @@ final class QuickCaptureWindowController: NSWindowController, NSWindowDelegate {
           self?.finishCapture(with: issue)
         }
       )
+      .nexusTheme(family: .nexus)
     )
   }
 

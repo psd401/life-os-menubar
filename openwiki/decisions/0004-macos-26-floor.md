@@ -4,7 +4,7 @@ okf_version: "0.1"
 
 # 0004 — Raise the deployment floor to macOS 26
 
-**Date:** 2026-10-31 · **Status:** Accepted, not implemented
+**Date:** 2026-10-31 · **Status:** Implemented
 ([#19](https://github.com/psd401/life-os-menubar/issues/19))
 
 ## Context
@@ -49,3 +49,19 @@ platform when NexusKit lands. Do not ship a compatibility path for macOS 15.
   count from this page — run
   `grep -c MACOSX_DEPLOYMENT_TARGET LifeOSMenubar.xcodeproj/project.pbxproj`
   and change them all (six at the time of writing).
+
+## As implemented
+
+All six `MACOSX_DEPLOYMENT_TARGET` entries moved to `26.0` in one commit,
+alongside `platforms: [.macOS(.v26)]` and `swift-tools-version: 6.2` in
+`Package.swift` — the tools version is NexusKit's floor, not just the
+platform. The Release `xcodebuild build` reports
+`--deployment-target 26.0`, which is how the move was verified rather than
+assumed.
+
+CI moved from `runs-on: macos-15` to `runs-on: macos-26`, the arm64 image that
+ships Xcode 26. `macos-15` ships Xcode 16 and cannot build for macOS 26 at all,
+so leaving that line alone would have failed every check on this PR.
+
+The README's requirements block — the single copy of the floor — now reads
+macOS 26 / Xcode 26 / Swift 6.2 and links here for the reason.
