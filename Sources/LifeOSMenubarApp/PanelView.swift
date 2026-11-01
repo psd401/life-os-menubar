@@ -5,6 +5,7 @@ import SwiftUI
 struct PanelView: View {
   @ObservedObject var settingsViewModel: SettingsViewModel
   @ObservedObject var taskListViewModel: TaskListViewModel
+  @ObservedObject var quickAddViewModel: QuickCaptureViewModel
   @State private var selectedIssue: LifeOSIssue?
   @State private var listMode = PanelListMode.all
   let openSettings: () -> Void
@@ -47,6 +48,14 @@ struct PanelView: View {
             .accessibilityLabel("Refreshing tasks")
         }
       }
+
+      QuickAddComposerView(
+        viewModel: quickAddViewModel,
+        token: settingsViewModel.token,
+        onCreated: { createdIssue in
+          taskListViewModel.reconcileRemoteIssue(createdIssue)
+        }
+      )
 
       Picker("Task view", selection: $listMode) {
         Text("All").tag(PanelListMode.all)
@@ -155,6 +164,73 @@ struct PanelView: View {
 private enum PanelListMode: String, CaseIterable {
   case all
   case today
+}
+
+/// Inline quick-add pinned above the scrolling task list.
+///
+/// Title-only by design: it leaves `body` and `priority` on the view model
+/// untouched so every task it creates carries the Agent Operating Contract
+/// defaults (`status:inbox`, `type:task`, `source:manual`, `priority:p2`). The
+/// capture window remains the place to override priority or add notes.
+private struct QuickAddComposerView: View {
+  @ObservedObject var viewModel: QuickCaptureViewModel
+  @FocusState private var isTitleFocused: Bool
+
+  let token: String
+  let onCreated: (LifeOSIssue) -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 8) {
+        TextField("Add a task", text: $viewModel.title)
+          .textFieldStyle(.roundedBorder)
+          .focused($isTitleFocused)
+          .onSubmit(submit)
+          .disabled(viewModel.isSubmitting)
+          .accessibilityLabel("New task title")
+
+        if viewModel.isSubmitting {
+          ProgressView()
+            .controlSize(.small)
+            .accessibilityLabel("Adding task")
+        }
+
+        Button("Add task", action: submit)
+          .disabled(!viewModel.canSubmit)
+          .accessibilityLabel("Add task to Inbox")
+      }
+
+      if let errorMessage = viewModel.errorMessage {
+        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+          .font(.caption)
+          .foregroundStyle(.red)
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityLabel("Add task error: \(errorMessage)")
+      }
+    }
+    .onAppear {
+      isTitleFocused = true
+    }
+    // NSPopover reuses one hosting controller, so `onAppear` is not a reliable
+    // panel-open signal; the counter the panel bumps on open is.
+    .onChange(of: viewModel.titleFocusRequest) {
+      isTitleFocused = true
+    }
+  }
+
+  private func submit() {
+    guard viewModel.canSubmit else {
+      return
+    }
+    Task {
+      if let createdIssue = await viewModel.submit(token: token) {
+        onCreated(createdIssue)
+      }
+      // Keep the caret in the field either way: ready for the next task on
+      // success, and on the retained text after a failure.
+      isTitleFocused = true
+    }
+  }
 }
 
 private struct FilterControlsView: View {
