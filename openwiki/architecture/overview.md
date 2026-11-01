@@ -8,8 +8,8 @@ okf_version: "0.1"
 
 | Target | Path | Contains | Tested |
 |--------|------|----------|--------|
-| `LifeOSMenubarCore` | `Sources/LifeOSMenubarCore` | Models, GitHub clients, sync engine, stores, view models. No AppKit, no SwiftUI. | Yes — `Tests/LifeOSMenubarCoreTests`, 128 swift-testing tests |
-| `LifeOSMenubar` | `Sources/LifeOSMenubarApp` | AppKit/SwiftUI shell: status item, panel, detail, settings, quick capture. Depends on Core and on `KeyboardShortcuts`. | No — by design |
+| `LifeOSMenubarCore` | `Sources/LifeOSMenubarCore` | Models, GitHub clients, sync engine, stores, view models. No AppKit, no SwiftUI. | Yes — `Tests/LifeOSMenubarCoreTests`, swift-testing suites |
+| `LifeOSMenubar` | `Sources/LifeOSMenubarApp` | AppKit/SwiftUI shell: status item, panel, detail, settings, quick capture. Depends on Core, `KeyboardShortcuts`, and NexusKit. | No — by design |
 
 The split exists so the whole task-management behavior is testable without a
 running UI. Anything with a branch in it belongs in Core; the App target is
@@ -23,8 +23,9 @@ what makes `swift test` fast. Both must stay green — see
 
 Two dependencies:
 
-- `sindresorhus/KeyboardShortcuts`, pinned `exact: "2.3.0"`, used only for the
-  global quick-capture hotkey.
+- `sindresorhus/KeyboardShortcuts`, pinned to an exact version in
+  `Package.swift` (Dependabot bumps it), used only for the global quick-capture
+  hotkey.
 - **NexusKit**, vendored at `Vendor/NexusKit/` as a local SwiftPM package — the
   Nexus design system's SwiftUI tokens and components. It is a verbatim copy of
   `design-system/nexus/apple/NexusKit` from `psd401/psd-dev-standards`;
