@@ -348,6 +348,69 @@ struct TaskListViewModelTests {
     #expect(persisted.lastFullSyncedAt == nil)
   }
 
+  @Test
+  func aRefreshThatWasInFlightWhenTheRepositoryChangedIsDiscarded() async throws {
+    // Regression for the race found in review of #21: the old repository's
+    // refresh finished *after* the reset, wrote its issues and a fresh
+    // watermark to the cache, and put them back on screen under the new repo.
+    let cache = ViewModelCacheStore()
+    let client = ControlledIssueFetcher()
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(client: client, cacheStore: cache),
+      filterStore: ViewModelFilterStore()
+    )
+
+    let refresh = Task { @MainActor in
+      await viewModel.refresh(token: "token")
+    }
+    await client.waitUntilPending()
+
+    viewModel.resetForRepositoryChange()
+    await client.finish(with: [viewModelTestIssue(number: 7)])
+    await refresh.value
+
+    #expect(viewModel.issues.isEmpty)
+    #expect(viewModel.lastSyncedAt == nil)
+    let persisted = try #require(try cache.load())
+    #expect(persisted.issues.isEmpty)
+    // The watermark is the dangerous half: left set, the next refresh would be
+    // a delta sync against the new repo using the old repo's sync time.
+    #expect(persisted.lastSyncedAt == nil)
+    #expect(persisted.lastFullSyncedAt == nil)
+  }
+
+  @Test
+  func aRefreshRequestedDuringAnInFlightOneRunsAfterwardsInsteadOfBeingDropped() async throws {
+    let cache = ViewModelCacheStore()
+    // Only the first fetch suspends; later ones answer immediately, so a
+    // regression fails this test rather than hanging it waiting for a second
+    // fetch that never comes.
+    let client = ControlledIssueFetcher(
+      laterCallsReturn: [viewModelTestIssue(number: 9)]
+    )
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(client: client, cacheStore: cache),
+      filterStore: ViewModelFilterStore()
+    )
+
+    let firstRefresh = Task { @MainActor in
+      await viewModel.refresh(token: "token")
+    }
+    await client.waitUntilPending()
+
+    // What AppDelegate does when the repository changes: reset, then refresh.
+    viewModel.resetForRepositoryChange()
+    await viewModel.refresh(token: "token")
+
+    await client.finish(with: [])
+    await firstRefresh.value
+
+    #expect(await client.callCount == 2)
+    #expect(viewModel.issues.map(\.number) == [9])
+  }
+
 }
 
 private func viewModelTestIssue(number: Int) -> LifeOSIssue {
@@ -413,5 +476,51 @@ private final class ViewModelFilterStore: TaskFilterStoring, @unchecked Sendable
     lock.withLock {
       mutableSnapshot = snapshot
     }
+  }
+}
+
+/// A fetcher the test resumes by hand, so a repository change can be made to
+/// land in the middle of a refresh.
+private actor ControlledIssueFetcher: GitHubIssueFetching {
+  private(set) var callCount = 0
+  private let laterCallsReturn: [LifeOSIssue]?
+  private var pending: CheckedContinuation<[LifeOSIssue], any Error>?
+  private var waiters: [CheckedContinuation<Void, Never>] = []
+
+  /// `laterCallsReturn` makes every fetch after the first answer immediately
+  /// with those issues; `nil` suspends every fetch until `finish(with:)`.
+  init(laterCallsReturn: [LifeOSIssue]? = nil) {
+    self.laterCallsReturn = laterCallsReturn
+  }
+
+  func fetchIssues(token: String, updatedAfter: Date?) async throws -> [LifeOSIssue] {
+    callCount += 1
+    if callCount > 1, let laterCallsReturn {
+      return laterCallsReturn
+    }
+    return try await withCheckedThrowingContinuation { continuation in
+      pending = continuation
+      for waiter in waiters {
+        waiter.resume()
+      }
+      waiters = []
+    }
+  }
+
+  func waitUntilPending() async {
+    guard pending == nil else {
+      return
+    }
+    await withCheckedContinuation { continuation in
+      waiters.append(continuation)
+    }
+  }
+
+  func finish(with issues: [LifeOSIssue]) {
+    guard let continuation = pending else {
+      preconditionFailure("No pending fetch to finish")
+    }
+    pending = nil
+    continuation.resume(returning: issues)
   }
 }
