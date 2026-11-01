@@ -145,93 +145,102 @@ struct TaskDetailView: View {
     }
   }
 
+  // The three menus and the close button need more than the panel's content
+  // width at Nexus body size, and a squeezed macOS menu truncates its label
+  // ("Edit l…") rather than wrapping. So the menus keep their full width on one
+  // line and the close button takes the line below.
   private var actions: some View {
-    HStack(spacing: NexusSpace.s2) {
-      Menu {
-        ForEach(TaskStatusSection.allCases) { status in
-          Button {
-            Task {
-              if let updatedIssue = await viewModel.changeStatus(
-                token: token,
-                to: status.labelName
-              ) {
-                onIssueUpdated(updatedIssue)
-              }
-            }
-          } label: {
-            if currentStatus == status.labelName {
-              Label(status.title, systemImage: "checkmark")
-            } else {
-              Text(status.title)
-            }
-          }
-        }
-      } label: {
-        Label(statusTitle, systemImage: "arrow.triangle.2.circlepath")
-          .font(NexusFont.body)
-      }
-      .disabled(viewModel.isMutating || !viewModel.hasLoadedDetail)
-      .accessibilityLabel("Change status. Current status: \(statusTitle)")
-
-      Menu {
-        ForEach(priorityChoices, id: \.self) { priority in
-          Button {
-            Task {
-              if let updatedIssue = await viewModel.changePriority(
-                token: token,
-                to: priority
-              ) {
-                onIssueUpdated(updatedIssue)
-              }
-            }
-          } label: {
-            if currentPriority == priority {
-              Label(priorityTitle(priority), systemImage: "checkmark")
-            } else {
-              Text(priorityTitle(priority))
-            }
-          }
-        }
-      } label: {
-        Label(priorityTitle(currentPriority), systemImage: "flag")
-          .font(NexusFont.body)
-      }
-      .disabled(viewModel.isMutating || !viewModel.hasLoadedDetail)
-      .accessibilityLabel("Change priority. Current priority: \(priorityTitle(currentPriority))")
-
-      Menu {
-        if nonContractLabels.isEmpty {
-          Text("No labels in cache")
-        } else {
-          ForEach(nonContractLabels, id: \.name) { label in
+    VStack(alignment: .trailing, spacing: NexusSpace.s2) {
+      HStack(spacing: NexusSpace.s2) {
+        Menu {
+          ForEach(TaskStatusSection.allCases) { status in
             Button {
               Task {
-                let isSelected = !viewModel.issue.labels.contains { $0.name == label.name }
-                if let updatedIssue = await viewModel.setNonContractLabel(
+                if let updatedIssue = await viewModel.changeStatus(
                   token: token,
-                  label: label.name,
-                  isSelected: isSelected
+                  to: status.labelName
                 ) {
                   onIssueUpdated(updatedIssue)
                 }
               }
             } label: {
-              if viewModel.issue.labels.contains(where: { $0.name == label.name }) {
-                Label(label.name, systemImage: "checkmark")
+              if currentStatus == status.labelName {
+                Label(status.title, systemImage: "checkmark")
               } else {
-                Text(label.name)
+                Text(status.title)
               }
             }
           }
+        } label: {
+          Label(statusTitle, systemImage: "arrow.triangle.2.circlepath")
+            .font(NexusFont.body)
         }
-      } label: {
-        Label("Edit labels", systemImage: "tag")
-          .font(NexusFont.body)
-      }
-      .disabled(viewModel.isMutating || !viewModel.hasLoadedDetail)
-      .accessibilityLabel("Edit non-contract labels")
+        .disabled(viewModel.isMutating || !viewModel.hasLoadedDetail)
+        .fixedSize()
+        .accessibilityLabel("Change status. Current status: \(statusTitle)")
 
-      Spacer()
+        Menu {
+          ForEach(priorityChoices, id: \.self) { priority in
+            Button {
+              Task {
+                if let updatedIssue = await viewModel.changePriority(
+                  token: token,
+                  to: priority
+                ) {
+                  onIssueUpdated(updatedIssue)
+                }
+              }
+            } label: {
+              if currentPriority == priority {
+                Label(priorityTitle(priority), systemImage: "checkmark")
+              } else {
+                Text(priorityTitle(priority))
+              }
+            }
+          }
+        } label: {
+          Label(priorityTitle(currentPriority), systemImage: "flag")
+            .font(NexusFont.body)
+        }
+        .disabled(viewModel.isMutating || !viewModel.hasLoadedDetail)
+        .fixedSize()
+        .accessibilityLabel("Change priority. Current priority: \(priorityTitle(currentPriority))")
+
+        Menu {
+          if nonContractLabels.isEmpty {
+            Text("No labels in cache")
+          } else {
+            ForEach(nonContractLabels, id: \.name) { label in
+              Button {
+                Task {
+                  let isSelected = !viewModel.issue.labels.contains { $0.name == label.name }
+                  if let updatedIssue = await viewModel.setNonContractLabel(
+                    token: token,
+                    label: label.name,
+                    isSelected: isSelected
+                  ) {
+                    onIssueUpdated(updatedIssue)
+                  }
+                }
+              } label: {
+                if viewModel.issue.labels.contains(where: { $0.name == label.name }) {
+                  Label(label.name, systemImage: "checkmark")
+                } else {
+                  Text(label.name)
+                }
+              }
+            }
+          }
+        } label: {
+          Label("Edit labels", systemImage: "tag")
+            .font(NexusFont.body)
+        }
+        .disabled(viewModel.isMutating || !viewModel.hasLoadedDetail)
+        .fixedSize()
+        .accessibilityLabel("Edit non-contract labels")
+
+        Spacer(minLength: 0)
+      }
 
       Button("Close task", role: .destructive) {
         showsCloseConfirmation = true

@@ -606,11 +606,14 @@ private struct TaskRow: View {
           .font(NexusFont.code)
           .foregroundStyle(palette.inkSubtle)
           .frame(minWidth: NexusSpace.s10, alignment: .trailing)
+          .fixedSize()
 
-        // The title takes the row's slack. Without the priority, the fixed
-        // columns beside it — number, due date, priority code, chevron — would
-        // split the 400pt panel's width evenly with it and truncate titles that
-        // have room to wrap.
+        // The title takes the row's slack. Without the priority, the columns
+        // beside it — number, due date, priority code, chevron — would split
+        // the 400pt panel's width evenly with it and truncate titles that have
+        // room to wrap. Those columns are `.fixedSize()` so the title is the
+        // only thing that gives: squeezed, a due date wraps `2026-11-01` over
+        // five lines.
         Text(issue.title)
           .font(NexusFont.body)
           .foregroundStyle(palette.ink)
@@ -623,12 +626,14 @@ private struct TaskRow: View {
           Text(dueDate.githubDate)
             .font(NexusFont.code)
             .foregroundStyle(palette.inkMuted)
+            .fixedSize()
         }
 
         if let priority = issue.labels.first(where: { $0.name.hasPrefix("priority:") }) {
           Text(priority.name.replacingOccurrences(of: "priority:", with: "").uppercased())
             .font(NexusFont.code)
             .foregroundStyle(palette.inkMuted)
+            .fixedSize()
         }
 
         Image(systemName: "chevron.right")
