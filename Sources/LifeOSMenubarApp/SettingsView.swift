@@ -10,8 +10,10 @@ enum SettingsMetrics {
   static let width: CGFloat = 520
   /// Grown for the "Task repository" section added in
   /// [#21](https://github.com/psd401/life-os-menubar/issues/21); the form has a
-  /// fixed frame, so a section that does not fit is a clipped section.
-  static let height: CGFloat = 660
+  /// fixed frame, so a section that does not fit is a clipped section. Sized for
+  /// that section's tallest state — a repository that failed validation, which
+  /// shows both the three-line missing-labels notice and the unconfigured one.
+  static let height: CGFloat = 740
 }
 
 struct SettingsView: View {
@@ -101,8 +103,22 @@ struct SettingsView: View {
           }
           .buttonStyle(.bordered)
           .disabled(!viewModel.isRepositoryConfigured && viewModel.repositorySlug.isEmpty)
+        }
 
-          repositoryStatus
+        // The verdict sits on its own row rather than beside the buttons: a
+        // badge sharing the row squeezes "Save and validate repository" until
+        // macOS truncates the button's own label.
+        repositoryStatus
+
+        // The reason goes on its own full-width row, not inside the badge: the
+        // missing-label message names every missing label, and a badge sharing
+        // a row with two buttons truncates it to the first two.
+        if case .invalid(let message) = viewModel.repositoryState {
+          SettingsNotice(
+            message: message,
+            systemImage: "exclamationmark.triangle",
+            foreground: palette.dangerInk
+          )
         }
 
         if !viewModel.isRepositoryConfigured {
@@ -197,10 +213,11 @@ struct SettingsView: View {
     case .valid(let slug):
       NexusBadge("Valid · \(slug)", tone: .success)
         .accessibilityLabel("Task repository \(slug) is valid")
-    case .invalid(let message):
-      NexusBadge("Not valid · \(message)", tone: .danger)
-        .lineLimit(3)
-        .accessibilityLabel("Task repository is not valid: \(message)")
+    case .invalid:
+      // The reason is the notice below this row, so the badge is only the
+      // verdict — still a word beside the color, per the Nexus rule.
+      NexusBadge("Not valid", tone: .danger)
+        .accessibilityLabel("Task repository is not valid")
     }
   }
 
