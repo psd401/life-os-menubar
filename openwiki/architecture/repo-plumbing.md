@@ -33,25 +33,53 @@ the development toolchain and compiles it — see
 [decision 0004](../decisions/0004-macos-26-floor.md). It is a preview image
 today; move to the stable macOS 27 label when there is one.
 
-Also on the repo: `claude-code-review.yml` (AI review on every PR) and
-`claude.yml` (responds to `@claude` mentions), both using
-`anthropics/claude-code-action`, plus GitHub's CodeQL default setup.
+### AI review
 
-The AI review has one behavior worth knowing: `claude-code-action` validates
-that the workflow file in the PR is **identical to the copy on the default
-branch**, and skips itself when it is not. So a PR that edits
-`claude-code-review.yml` gets a green `claude-review` check with no review
-posted — the job logs "Skipping action due to workflow validation". That is a
-deliberate safety measure, not a failure, and it is why the PR that first
-SHA-pinned these workflows could not be reviewed by Claude. Reviews resume on
-the next PR that leaves the workflow alone.
+`claude-review.yml` is the org's caller template, copied unchanged from
+`psd401/.github` `workflow-templates/claude-review.yml`. It calls the org
+reusable `reusable-claude-review.yml`, pinned by SHA, on every push to a PR.
+The reusable runs Claude Haiku 5.5 on Amazon Bedrock with the org
+`BEDROCK_API_KEY` secret and posts one severity-tiered comment as
+`claude[bot]` (standards/03). Dependabot PRs get a no-op job with the same
+`claude-review` name instead, because Dependabot runs cannot grant
+`id-token: write`. To change the prompt or model, change the reusable
+upstream; this repo only bumps the pin.
 
-`.psd/verify.json`'s `reviewers` therefore lists only `claude[bot]`. GitHub's
-Copilot code reviewer posted on PRs #13–#15 while the repo was under the
-`krishagel` account, but it is not configured for the repo under `psd401` —
-requesting it via the API succeeds and is silently ignored. Do not add a login
-to `reviewers` that cannot actually post; the watch-until-clean loop will spin
-on it.
+The stock Anthropic `claude-code-review.yml` it replaced never posted
+anything: it allowed the agent no `gh` commands, so each run ended "success"
+with permission denials and the review stayed in the hidden job log.
+
+`claude-code-action` validates that the workflow file in the PR is
+**identical to the copy on the default branch**, and skips itself when it is
+not. A PR that edits `claude-review.yml` therefore gets no review posted —
+the job logs "Skipping action due to workflow validation". That is a
+deliberate safety measure, not a failure. Reviews resume on the next PR that
+leaves the workflow alone.
+
+`claude.yml` responds to `@claude` mentions and still uses
+`anthropics/claude-code-action` directly.
+
+GitHub's Copilot code reviewer also reviews PRs here, but only when it is
+requested (it reviewed #25 and #26). `.psd/verify.json`'s `reviewers` lists
+only `claude[bot]`, which posts on every PR. Do not add a login that posts only
+on request, or the watch-until-clean loop will spin waiting for it.
+
+### CodeQL
+
+CodeQL runs as GitHub default setup. The org's enforced "PSD Baseline -
+Public" security configuration requires default setup and disallows advanced
+setup (`allow_advanced: false`), so this repo cannot carry its own CodeQL
+workflow or a `paths-ignore` config — standards/04 rule 1. Default setup
+autobuilds Swift on GitHub's standard macOS runner with that image's default
+Xcode (`macos-26-arm64`, Xcode 26.6, as of 2026-11-01), so everything the app
+compiles, vendored code included, must build with that toolchain.
+
+NexusKit at `4affbd15` does not: the `#Preview` at
+`Vendor/NexusKit/Sources/NexusKit/NexusGallery2.swift:223` fails to type-check
+on Xcode 26.6, so `Analyze (swift)` fails. Moving the scan to `xcode-27` is no
+way out either: Xcode 27 ships Swift 6.4, and CodeQL supports Swift up to 6.3.
+The fix is upstream — simplify that expression in the Nexus artifact, flow it
+to `psd-dev-standards`, and re-vendor.
 
 ### Actions must be SHA-pinned
 
