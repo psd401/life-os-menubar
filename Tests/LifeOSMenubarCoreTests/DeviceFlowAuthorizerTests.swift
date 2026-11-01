@@ -160,6 +160,57 @@ struct DeviceFlowAuthorizerTests {
     #expect(await clock.sleptSeconds == [1])
   }
 
+  @Test
+  func clampsAnAbsurdAuthorizationSoTheLoopArithmeticCannotTrap() async throws {
+    // A DeviceAuthorization can be built by any caller, so the ceiling is
+    // enforced here too: `elapsed + interval` on Int.max would trap, not throw.
+    let requester = DeviceFlowRequesterStub(outcomes: [.authorized(token: "gho_test")])
+    let clock = RecordingClock()
+    let authorizer = GitHubDeviceFlowAuthorizer(
+      clientID: "cid",
+      client: requester,
+      clock: clock
+    )
+
+    let token = try await authorizer.waitForAccessToken(
+      authorization: DeviceAuthorization(
+        deviceCode: "dc-1",
+        userCode: "WDJB-MJHT",
+        verificationURL: URL(string: "https://github.com/login/device")!,
+        expiresInSeconds: .max,
+        pollIntervalSeconds: .max
+      )
+    )
+
+    #expect(token == "gho_test")
+    #expect(await clock.sleptSeconds == [DeviceFlowSeconds.maximum])
+  }
+
+  @Test
+  func givesUpRatherThanTrappingWhenSlowDownAsksForAnAbsurdInterval() async {
+    let requester = DeviceFlowRequesterStub(outcomes: [
+      .slowDown(pollIntervalSeconds: .max),
+      .authorized(token: "never-reached"),
+    ])
+    let clock = RecordingClock()
+    let authorizer = GitHubDeviceFlowAuthorizer(
+      clientID: "cid",
+      client: requester,
+      clock: clock
+    )
+
+    // The clamped interval no longer fits in the code's remaining lifetime, so
+    // the loop ends with an expired code — the point being that it ends at all
+    // rather than trapping on `elapsed + Int.max`.
+    await #expect(throws: DeviceFlowError.expiredCode) {
+      try await authorizer.waitForAccessToken(
+        authorization: makeAuthorization(expiresInSeconds: 900, pollIntervalSeconds: 5)
+      )
+    }
+
+    #expect(await clock.sleptSeconds == [5])
+  }
+
   private func makeAuthorization(
     expiresInSeconds: Int = 900,
     pollIntervalSeconds: Int = 5

@@ -152,14 +152,76 @@ struct DeviceFlowClientTests {
     }
   }
 
-  @Test
-  func rejectsADeviceCodeResponseWithAnUnusableVerificationURL() async {
+  @Test(arguments: ["", "life-os-menubar://steal", "http://github.com/login/device"])
+  func rejectsAVerificationURLThatIsNotHTTPS(verificationURI: String) async {
     URLProtocolStub.handler = { request in
       (
         try response(for: request, statusCode: 200),
         Data(
           """
-          {"device_code":"dc-1","user_code":"WDJB-MJHT","verification_uri":"",\
+          {"device_code":"dc-1","user_code":"WDJB-MJHT",\
+          "verification_uri":"\(verificationURI)","expires_in":900,"interval":5}
+          """.utf8)
+      )
+    }
+
+    // The URL is handed to the system to open, so anything but https is refused.
+    await #expect(throws: DeviceFlowError.invalidResponse) {
+      try await makeClient().requestDeviceAuthorization(
+        clientID: "test-client-id",
+        scopes: ["repo"]
+      )
+    }
+  }
+
+  @Test
+  func clampsAbsurdDurationsSoThePollArithmeticCannotOverflow() async throws {
+    URLProtocolStub.handler = { request in
+      (
+        try response(for: request, statusCode: 200),
+        Data(
+          """
+          {"device_code":"dc-1","user_code":"WDJB-MJHT",\
+          "verification_uri":"https://github.com/login/device",\
+          "expires_in":9223372036854775807,"interval":9223372036854775807}
+          """.utf8)
+      )
+    }
+
+    let authorization = try await makeClient().requestDeviceAuthorization(
+      clientID: "test-client-id",
+      scopes: ["repo"]
+    )
+
+    #expect(authorization.expiresInSeconds == DeviceFlowSeconds.maximum)
+    #expect(authorization.pollIntervalSeconds == DeviceFlowSeconds.maximum)
+  }
+
+  @Test
+  func clampsAnAbsurdSlowDownInterval() async throws {
+    URLProtocolStub.handler = { request in
+      (
+        try response(for: request, statusCode: 200),
+        Data(#"{"error":"slow_down","interval":9223372036854775807}"#.utf8)
+      )
+    }
+
+    let outcome = try await makeClient().redeemAccessToken(
+      clientID: "test-client-id",
+      deviceCode: "dc-1"
+    )
+
+    #expect(outcome == .slowDown(pollIntervalSeconds: DeviceFlowSeconds.maximum))
+  }
+
+  @Test
+  func rejectsADeviceCodeResponseMissingTheCodesThemselves() async {
+    URLProtocolStub.handler = { request in
+      (
+        try response(for: request, statusCode: 200),
+        Data(
+          """
+          {"user_code":"","verification_uri":"https://github.com/login/device",\
           "expires_in":900,"interval":5}
           """.utf8)
       )

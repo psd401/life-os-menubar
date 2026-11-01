@@ -12,17 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_ notification: Notification) {
     NSApplication.shared.setActivationPolicy(.accessory)
 
-    let settingsViewModel = SettingsViewModel(
-      tokenStore: KeychainTokenStore(),
-      validator: GitHubTokenValidator(),
-      launchAtLoginController: LaunchAtLoginController(),
-      deviceFlow: GitHubDeviceFlowAuthorizer(),
-      // Core holds no AppKit, so sending the user to github.com/login/device is
-      // wired up here.
-      verificationPageOpener: { url in
-        NSWorkspace.shared.open(url)
-      }
-    )
+    // The task list is built first so signing out can clear it: the settings
+    // view model takes that as a closure.
     let cacheStore = JSONIssueCacheStore()
     let taskListViewModel = TaskListViewModel(
       cacheStore: cacheStore,
@@ -32,6 +23,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         cacheStore: cacheStore
       ),
       filterStore: JSONTaskFilterStore()
+    )
+    let settingsViewModel = SettingsViewModel(
+      tokenStore: KeychainTokenStore(),
+      validator: GitHubTokenValidator(),
+      launchAtLoginController: LaunchAtLoginController(),
+      deviceFlow: GitHubDeviceFlowAuthorizer(),
+      // Core holds no AppKit, so sending the user to github.com/login/device is
+      // wired up here.
+      verificationPageOpener: { url in
+        NSWorkspace.shared.open(url)
+      },
+      onSignOut: { [weak taskListViewModel] in
+        taskListViewModel?.clearCachedTasks()
+      }
     )
     let settingsWindowController = SettingsWindowController(
       viewModel: settingsViewModel,

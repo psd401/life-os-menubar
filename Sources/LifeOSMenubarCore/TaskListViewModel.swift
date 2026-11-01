@@ -116,6 +116,24 @@ public final class TaskListViewModel: ObservableObject {
     }
   }
 
+  /// Drops every synced task, in memory and on disk.
+  ///
+  /// Called on sign-out. `refresh(token:)` returns early on an empty token
+  /// without touching `issues`, so without this the previous account's tasks
+  /// would keep showing in the panel and counting toward the Today badge —
+  /// and would still be there for whoever signs in next. Resetting the cache to
+  /// `.empty` also clears the sync watermarks, so the next sign-in starts with
+  /// a full fetch rather than a delta against someone else's data.
+  public func clearCachedTasks() {
+    apply(.empty)
+    errorMessage = nil
+    do {
+      try cacheStore.save(.empty)
+    } catch {
+      errorMessage = "Cached tasks could not be cleared: \(error.localizedDescription)"
+    }
+  }
+
   public func startBackgroundRefresh(
     every interval: Duration = .seconds(300),
     tokenProvider: @escaping @MainActor () -> String

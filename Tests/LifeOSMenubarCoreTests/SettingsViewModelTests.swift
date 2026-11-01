@@ -1,4 +1,5 @@
 import Foundation
+import Security
 import Testing
 
 @testable import LifeOSMenubarCore
@@ -223,6 +224,133 @@ struct SettingsViewModelTests {
   }
 
   @Test
+  func aCancelledNetworkCallIsTreatedAsCancellationNotAFailure() async {
+    // Cancelling a task mid-request makes URLSession throw URLError.cancelled,
+    // not CancellationError, and the user should not see that as an error.
+    let authorizer = DeviceFlowAuthorizerStub(
+      tokenResult: .failure(URLError(.cancelled))
+    )
+    let viewModel = makeViewModel(deviceFlow: authorizer)
+
+    await viewModel.signInWithDeviceFlow()
+
+    #expect(viewModel.deviceFlowState == .idle)
+  }
+
+  @Test
+  func aSignInThatLandsAfterSignOutIsDiscardedInsteadOfStoringItsToken() async {
+    let tokenStore = TokenStoreSpy(storedToken: "saved-token")
+    let authorizer = ControlledDeviceFlowAuthorizer()
+    let viewModel = makeViewModel(tokenStore: tokenStore, deviceFlow: authorizer)
+
+    let signIn = Task { @MainActor in
+      await viewModel.signInWithDeviceFlow()
+    }
+    await authorizer.waitUntilPolling()
+
+    // Signing out supersedes the attempt in flight.
+    viewModel.signOut()
+    #expect(viewModel.token.isEmpty)
+
+    // GitHub approves anyway, a moment too late.
+    await authorizer.finish(.success("gho_too_late"))
+    await signIn.value
+
+    // The stale result is dropped: no token stored, and the signed-out state
+    // stands rather than being overwritten by a sign-in the user abandoned.
+    #expect(tokenStore.savedTokens.isEmpty)
+    #expect(viewModel.token.isEmpty)
+    #expect(viewModel.deviceFlowState == .idle)
+    #expect(!viewModel.isSignedIn)
+  }
+
+  @Test
+  func aFailureThatLandsAfterSignOutDoesNotResurrectAnErrorBanner() async {
+    let authorizer = ControlledDeviceFlowAuthorizer()
+    let viewModel = makeViewModel(deviceFlow: authorizer)
+
+    let signIn = Task { @MainActor in
+      await viewModel.signInWithDeviceFlow()
+    }
+    await authorizer.waitUntilPolling()
+
+    viewModel.signOut()
+    await authorizer.finish(.failure(DeviceFlowError.accessDenied))
+    await signIn.value
+
+    #expect(viewModel.deviceFlowState == .idle)
+  }
+
+  @Test
+  func aFailedKeychainWriteRestoresTheCredentialTheAttemptStartedFrom() async {
+    let tokenStore = TokenStoreSpy(storedToken: "legacy-token", failsToSave: true)
+    let authorizer = DeviceFlowAuthorizerStub(tokenResult: .success("gho_never_stored"))
+    let viewModel = makeViewModel(tokenStore: tokenStore, deviceFlow: authorizer)
+
+    await viewModel.signInWithDeviceFlow()
+
+    #expect(tokenStore.savedTokens.isEmpty)
+    #expect(viewModel.token == "legacy-token")
+    if case .failed = viewModel.deviceFlowState {
+    } else {
+      Issue.record("Expected a failed device-flow state, got \(viewModel.deviceFlowState)")
+    }
+  }
+
+  @Test
+  func signOutClearsTheTasksSyncedByTheAccountBeingSignedOutOf() {
+    let signOutSpy = SignOutSpy()
+    let viewModel = makeViewModel(
+      tokenStore: TokenStoreSpy(storedToken: "saved-token"),
+      onSignOut: {
+        signOutSpy.record()
+      }
+    )
+
+    viewModel.signOut()
+
+    #expect(signOutSpy.callCount == 1)
+  }
+
+  @Test
+  func aFailedSignOutDoesNotClearTasksBecauseTheTokenIsStillStored() {
+    let signOutSpy = SignOutSpy()
+    let viewModel = makeViewModel(
+      tokenStore: TokenStoreSpy(storedToken: "saved-token", failsToDelete: true),
+      onSignOut: {
+        signOutSpy.record()
+      }
+    )
+
+    viewModel.signOut()
+
+    #expect(signOutSpy.callCount == 0)
+    #expect(viewModel.token == "saved-token")
+    #expect(viewModel.persistenceError != nil)
+  }
+
+  @Test
+  func anAbandonedValidationDoesNotLeaveTheSpinnerRunningForever() async {
+    let validator = ControlledTokenValidator()
+    let viewModel = makeViewModel(validator: validator)
+
+    viewModel.token = "first-token"
+    let validation = Task { @MainActor in
+      await viewModel.validateToken()
+    }
+    await validator.waitUntilPending(token: "first-token")
+    #expect(viewModel.validationState == .validating)
+
+    // The user edits the field but does not validate again, so no newer
+    // validation exists to replace this one's state.
+    viewModel.token = "edited-token"
+    await validator.succeed(token: "first-token", login: "stale-result")
+    await validation.value
+
+    #expect(viewModel.validationState == .idle)
+  }
+
+  @Test
   func refreshSignInStateStaysIdleWhenNoTokenIsStored() async {
     let viewModel = makeViewModel()
 
@@ -264,7 +392,8 @@ struct SettingsViewModelTests {
     deviceFlow: any DeviceFlowAuthorizing = DeviceFlowAuthorizerStub(
       tokenResult: .success("gho_test")
     ),
-    verificationPageOpener: @escaping (URL) -> Void = { _ in }
+    verificationPageOpener: @escaping @MainActor @Sendable (URL) -> Void = { _ in },
+    onSignOut: @escaping @MainActor () -> Void = {}
   ) -> SettingsViewModel {
     SettingsViewModel(
       tokenStore: tokenStore,
@@ -272,7 +401,8 @@ struct SettingsViewModelTests {
       launchAtLoginController: launchController,
       badgePreferenceStore: badgeStore,
       deviceFlow: deviceFlow,
-      verificationPageOpener: verificationPageOpener
+      verificationPageOpener: verificationPageOpener,
+      onSignOut: onSignOut
     )
   }
 
@@ -369,14 +499,27 @@ private actor ControlledDeviceFlowAuthorizer: DeviceFlowAuthorizing {
   }
 }
 
+@MainActor
+private final class SignOutSpy {
+  private(set) var callCount = 0
+
+  func record() {
+    callCount += 1
+  }
+}
+
 private final class TokenStoreSpy: TokenStoring, @unchecked Sendable {
   private let lock = NSLock()
   private var storedToken: String?
   private var mutableSavedTokens: [String] = []
   private var mutableDeleteCallCount = 0
+  private let failsToSave: Bool
+  private let failsToDelete: Bool
 
-  init(storedToken: String? = nil) {
+  init(storedToken: String? = nil, failsToSave: Bool = false, failsToDelete: Bool = false) {
     self.storedToken = storedToken
+    self.failsToSave = failsToSave
+    self.failsToDelete = failsToDelete
   }
 
   var savedTokens: [String] {
@@ -398,6 +541,9 @@ private final class TokenStoreSpy: TokenStoring, @unchecked Sendable {
   }
 
   func saveToken(_ token: String) throws {
+    if failsToSave {
+      throw KeychainError(status: errSecIO)
+    }
     lock.withLock {
       storedToken = token
       mutableSavedTokens.append(token)
@@ -405,6 +551,9 @@ private final class TokenStoreSpy: TokenStoring, @unchecked Sendable {
   }
 
   func deleteToken() throws {
+    if failsToDelete {
+      throw KeychainError(status: errSecIO)
+    }
     lock.withLock {
       storedToken = nil
       mutableDeleteCallCount += 1

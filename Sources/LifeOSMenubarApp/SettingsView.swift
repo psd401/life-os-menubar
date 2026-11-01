@@ -9,7 +9,11 @@ import SwiftUI
 /// controller and the view.
 enum SettingsMetrics {
   static let width: CGFloat = 520
-  static let height: CGFloat = 560
+  // Tall enough for the worst case: the missing-scope notice and a failed
+  // sign-in showing at once with Advanced expanded. The window is not
+  // resizable, and macOS hides the Form's scrollbar until it is used, so
+  // content that overflows is content the user will not know is there.
+  static let height: CGFloat = 680
 }
 
 struct SettingsView: View {
@@ -18,6 +22,7 @@ struct SettingsView: View {
   @Environment(\.nexus) private var palette
   @State private var signInTask: Task<Void, Never>?
   @State private var isAdvancedExpanded = false
+  @State private var didCopyCode = false
 
   var body: some View {
     Form {
@@ -115,13 +120,26 @@ struct SettingsView: View {
     .scrollContentBackground(.hidden)
     .padding(NexusSpace.s4)
     .frame(width: SettingsMetrics.width, height: SettingsMetrics.height)
-    .task {
-      await viewModel.refreshSignInState()
-    }
     .onDisappear {
-      signInTask?.cancel()
-      signInTask = nil
+      cancelSignIn()
     }
+  }
+
+  /// True while a device-flow sign-in is asking for or waiting on a grant.
+  private var isSignInInProgress: Bool {
+    switch viewModel.deviceFlowState {
+    case .requestingCode, .awaitingApproval:
+      true
+    case .idle, .failed:
+      false
+    }
+  }
+
+  /// Abandons an in-flight sign-in. It never touches a stored credential —
+  /// removing one is what Sign out does.
+  private func cancelSignIn() {
+    signInTask?.cancel()
+    signInTask = nil
   }
 
   // MARK: - Sign in
@@ -157,14 +175,16 @@ struct SettingsView: View {
           foreground: palette.warningInk
         )
       } else {
+        // This is the one sentence in the window that carries real risk, so it
+        // is set at body size rather than caption size like the rest.
         Text(
           "Sign-in asks for the repo and read:project scopes. Note that repo grants read and "
             + "write access to every repository your GitHub account can reach, including "
             + "private and organization repositories. For the least-privilege alternative, "
-            + "use Advanced below."
+            + "open Advanced and use a token instead."
         )
-        .font(NexusFont.caption1)
-        .foregroundStyle(palette.inkMuted)
+        .font(NexusFont.body)
+        .foregroundStyle(palette.ink)
         .fixedSize(horizontal: false, vertical: true)
       }
     }
@@ -175,7 +195,8 @@ struct SettingsView: View {
     HStack(spacing: NexusSpace.s2) {
       // The one prominent `action` button in this view.
       Button("Sign in with GitHub") {
-        signInTask?.cancel()
+        cancelSignIn()
+        didCopyCode = false
         signInTask = Task {
           await viewModel.signInWithDeviceFlow()
         }
@@ -186,8 +207,7 @@ struct SettingsView: View {
 
       if viewModel.isSignedIn {
         Button("Sign out", role: .destructive) {
-          signInTask?.cancel()
-          signInTask = nil
+          cancelSignIn()
           viewModel.signOut()
         }
         .buttonStyle(.bordered)
@@ -200,9 +220,10 @@ struct SettingsView: View {
   @ViewBuilder
   private func deviceCodePrompt(_ authorization: DeviceAuthorization) -> some View {
     VStack(alignment: .leading, spacing: NexusSpace.s2) {
-      Text("Enter this code on GitHub to finish signing in.")
+      Text("GitHub is open in your browser. Enter this code there, then come back here.")
         .font(NexusFont.body)
         .foregroundStyle(palette.ink)
+        .fixedSize(horizontal: false, vertical: true)
 
       HStack(spacing: NexusSpace.s2) {
         Text(authorization.userCode)
@@ -211,10 +232,11 @@ struct SettingsView: View {
           .textSelection(.enabled)
           .accessibilityLabel("Sign-in code \(authorization.userCode)")
 
-        Button("Copy code") {
+        Button(didCopyCode ? "Copied the code" : "Copy code") {
           let pasteboard = NSPasteboard.general
           pasteboard.clearContents()
           pasteboard.setString(authorization.userCode, forType: .string)
+          didCopyCode = true
         }
         .buttonStyle(.bordered)
 
@@ -225,15 +247,13 @@ struct SettingsView: View {
       HStack(spacing: NexusSpace.s2) {
         ProgressView()
           .controlSize(.small)
-        Text("Waiting for approval.")
+        Text("Waiting for your approval. This window updates on its own.")
           .font(NexusFont.caption1)
           .foregroundStyle(palette.inkMuted)
+          .fixedSize(horizontal: false, vertical: true)
 
-        // Cancelling abandons this attempt only. Any credential already in the
-        // Keychain is left alone; removing one is what Sign out is for.
         Button("Cancel sign-in") {
-          signInTask?.cancel()
-          signInTask = nil
+          cancelSignIn()
         }
         .buttonStyle(.bordered)
       }
@@ -273,8 +293,21 @@ struct SettingsView: View {
               || viewModel.validationState == .validating
           )
         }
+
+        if isSignInInProgress {
+          SettingsNotice(
+            message: "Finish or cancel the sign-in above before entering a token.",
+            systemImage: "info.circle",
+            foreground: palette.inkMuted
+          )
+        }
       }
       .padding(.top, NexusSpace.s2)
+      // Both paths write the same stored credential. Letting the field be
+      // edited while a sign-in is pending means two writers racing over one
+      // Keychain item, and a draft that a completing sign-in would silently
+      // overwrite.
+      .disabled(isSignInInProgress)
     } label: {
       Text("Use a token instead")
         .font(NexusFont.body)
@@ -288,8 +321,15 @@ struct SettingsView: View {
     case .idle:
       EmptyView()
     case .validating:
-      ProgressView()
-        .controlSize(.small)
+      HStack(spacing: NexusSpace.s2) {
+        ProgressView()
+          .controlSize(.small)
+        // A spinner on its own says "something is happening" and nothing else;
+        // the same rule that pairs a status color with a word applies here.
+        Text("Checking with GitHub.")
+          .font(NexusFont.caption1)
+          .foregroundStyle(palette.inkMuted)
+      }
     case .valid(let login):
       // The badge has to say "Signed in", not just turn green around a username:
       // the Nexus rule is that a status color is always paired with a word, and

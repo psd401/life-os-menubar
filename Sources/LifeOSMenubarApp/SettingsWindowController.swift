@@ -6,11 +6,13 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
   private var promotedActivationPolicy = false
+  private let viewModel: SettingsViewModel
 
   init(
     viewModel: SettingsViewModel,
     taskListViewModel: TaskListViewModel
   ) {
+    self.viewModel = viewModel
     let window = NSWindow(
       contentRect: NSRect(
         x: 0,
@@ -51,6 +53,14 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     showWindow(nil)
     window?.makeKeyAndOrderFront(nil)
     application.activate(ignoringOtherApps: true)
+
+    // This window and its hosted SwiftUI view are built once and reused, so a
+    // `.task` on the view would only ever run on the first open. Re-checking
+    // here is what keeps the signed-in badge honest after a token is revoked
+    // or expires between visits.
+    Task {
+      await viewModel.refreshSignInState()
+    }
   }
 
   func windowWillClose(_ notification: Notification) {

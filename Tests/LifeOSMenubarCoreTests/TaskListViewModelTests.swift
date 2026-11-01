@@ -27,6 +27,61 @@ struct TaskListViewModelTests {
   }
 
   @Test
+  func clearingCachedTasksEmptiesTheListAndTheCacheOnSignOut() async throws {
+    let cachedIssue = viewModelTestIssue(number: 11)
+    let cache = ViewModelCacheStore(
+      snapshot: IssueCacheSnapshot(
+        issues: [cachedIssue],
+        lastSyncedAt: Date(timeIntervalSince1970: 1_785_100_000),
+        lastFullSyncedAt: Date(timeIntervalSince1970: 1_785_100_000),
+        projectFieldAccess: .available
+      )
+    )
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: ViewModelFilterStore()
+    )
+    #expect(viewModel.issues == [cachedIssue])
+
+    viewModel.clearCachedTasks()
+
+    #expect(viewModel.issues.isEmpty)
+    #expect(viewModel.lastSyncedAt == nil)
+    #expect(viewModel.projectFieldAccess == .unknown)
+    #expect(viewModel.errorMessage == nil)
+    // On disk too: the next person to sign in must not find these.
+    let persisted = try #require(try cache.load())
+    #expect(persisted == .empty)
+  }
+
+  @Test
+  func anEmptyTokenAloneDoesNotDropCachedTasks() async {
+    // refresh(token:) deliberately keeps the cache on an empty token — an
+    // offline launch should still show tasks. Clearing is sign-out's job, which
+    // is why clearCachedTasks exists at all.
+    let cachedIssue = viewModelTestIssue(number: 12)
+    let cache = ViewModelCacheStore(
+      snapshot: IssueCacheSnapshot(issues: [cachedIssue], lastSyncedAt: nil)
+    )
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: ViewModelFilterStore()
+    )
+
+    await viewModel.refresh(token: "   ")
+
+    #expect(viewModel.issues == [cachedIssue])
+  }
+
+  @Test
   func refreshFailureKeepsCachedTasksAndShowsNonBlockingError() async {
     let cachedIssue = viewModelTestIssue(number: 8)
     let cache = ViewModelCacheStore(

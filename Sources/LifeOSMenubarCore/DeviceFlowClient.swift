@@ -23,6 +23,23 @@ public enum GitHubOAuthApp {
   public static let scopes = ["repo", "read:project"]
 }
 
+/// Bounds every duration GitHub sends before it reaches any arithmetic.
+///
+/// `expires_in` and `interval` arrive as untrusted integers. Swift's `Int`
+/// addition traps on overflow, so an absurd value — whether from a tampered
+/// response or a GitHub bug — would crash the app inside the poll loop rather
+/// than fail politely. Clamping at the decode boundary removes that whole class
+/// of problem in one place instead of hardening each addition.
+enum DeviceFlowSeconds {
+  /// One day is far beyond anything the device flow legitimately asks for; the
+  /// real values are 900 seconds and 5 seconds.
+  static let maximum = 86_400
+
+  static func clamped(_ seconds: Int) -> Int {
+    min(max(seconds, 0), maximum)
+  }
+}
+
 /// A device authorization as returned by `POST https://github.com/login/device/code`.
 public struct DeviceAuthorization: Equatable, Sendable {
   /// The app's half of the grant. Never shown to the user.
@@ -159,7 +176,10 @@ public struct GitHubDeviceFlowClient: DeviceFlowRequesting {
       let userCode = payload.userCode, !userCode.isEmpty,
       let verificationURI = payload.verificationURI,
       let verificationURL = URL(string: verificationURI),
-      verificationURL.scheme != nil,
+      // Only https. This URL is handed to the system to open, and the one check
+      // standing between a tampered response and NSWorkspace opening an
+      // arbitrary scheme's handler is this one.
+      verificationURL.scheme?.lowercased() == "https",
       let expiresIn = payload.expiresIn,
       let interval = payload.interval
     else {
@@ -170,8 +190,8 @@ public struct GitHubDeviceFlowClient: DeviceFlowRequesting {
       deviceCode: deviceCode,
       userCode: userCode,
       verificationURL: verificationURL,
-      expiresInSeconds: expiresIn,
-      pollIntervalSeconds: interval
+      expiresInSeconds: DeviceFlowSeconds.clamped(expiresIn),
+      pollIntervalSeconds: DeviceFlowSeconds.clamped(interval)
     )
   }
 
@@ -195,7 +215,7 @@ public struct GitHubDeviceFlowClient: DeviceFlowRequesting {
         return .authorizationPending
       case "slow_down":
         // The response carries the interval GitHub now wants.
-        return .slowDown(pollIntervalSeconds: payload.interval ?? 0)
+        return .slowDown(pollIntervalSeconds: DeviceFlowSeconds.clamped(payload.interval ?? 0))
       default:
         throw DeviceFlowError.forCode(code, description: payload.errorDescription)
       }
@@ -343,10 +363,13 @@ public struct GitHubDeviceFlowAuthorizer: DeviceFlowAuthorizing {
 
     // A zero or negative interval would turn the poll into a spin loop against
     // github.com, so one second is the floor regardless of what GitHub sends.
-    var interval = max(authorization.pollIntervalSeconds, 1)
+    // The ceiling is what keeps `elapsed + interval` below the point where Int
+    // addition traps; the client clamps too, but the arithmetic lives here, so
+    // the guard belongs here as well.
+    var interval = max(DeviceFlowSeconds.clamped(authorization.pollIntervalSeconds), 1)
     // GitHub reports `expired_token` on its own, but a server that kept
     // answering `authorization_pending` would otherwise poll forever.
-    let budget = max(authorization.expiresInSeconds, interval)
+    let budget = max(DeviceFlowSeconds.clamped(authorization.expiresInSeconds), interval)
     var elapsed = 0
 
     while elapsed + interval <= budget {
@@ -363,7 +386,9 @@ public struct GitHubDeviceFlowAuthorizer: DeviceFlowAuthorizing {
         continue
       case .slowDown(let requestedInterval):
         // The docs say add five seconds; the response may ask for more.
-        interval = max(requestedInterval, interval + 5)
+        interval = DeviceFlowSeconds.clamped(
+          max(DeviceFlowSeconds.clamped(requestedInterval), interval + 5)
+        )
       }
     }
 
