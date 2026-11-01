@@ -15,7 +15,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let settingsViewModel = SettingsViewModel(
       tokenStore: KeychainTokenStore(),
       validator: GitHubTokenValidator(),
-      launchAtLoginController: LaunchAtLoginController()
+      launchAtLoginController: LaunchAtLoginController(),
+      deviceFlow: GitHubDeviceFlowAuthorizer(),
+      // Core holds no AppKit, so sending the user to github.com/login/device is
+      // wired up here.
+      verificationPageOpener: { url in
+        NSWorkspace.shared.open(url)
+      }
     )
     let cacheStore = JSONIssueCacheStore()
     let taskListViewModel = TaskListViewModel(
