@@ -53,13 +53,16 @@ startup.
 
 ## Dependabot
 
-`.github/dependabot.yml` covers two ecosystems, both weekly on Monday, both
-targeting `main`:
+`.github/dependabot.yml` covers two ecosystems, both weekly on Monday:
 
 | Ecosystem | What it updates | Commit prefix |
 |-----------|-----------------|---------------|
 | `swift` | the SwiftPM dependency (`KeyboardShortcuts`), via `Package.resolved` | `chore(deps)` |
 | `github-actions` | the pinned action SHAs in `.github/workflows/` | `chore(ci)` |
+
+`target-branch` is deliberately **not** set. `main` is the default branch so it
+would be redundant — and setting `target-branch` also turns off Dependabot
+security updates for that ecosystem, which is a real loss for no gain.
 
 Note that `Package.swift` pins `KeyboardShortcuts` with `exact:`, so a Dependabot
 bump has to change `Package.swift` as well as the resolved files — review those

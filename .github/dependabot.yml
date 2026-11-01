@@ -1,5 +1,8 @@
 version: 2
 
+# `target-branch` is deliberately omitted: `main` is the default branch, so
+# setting it would be redundant, and setting it also disables Dependabot
+# security updates for that ecosystem.
 updates:
   - package-ecosystem: "swift"
     directory: "/"
@@ -7,7 +10,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    target-branch: "main"
     commit-message:
       prefix: "chore(deps)"
     labels:
@@ -19,7 +21,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    target-branch: "main"
     commit-message:
       prefix: "chore(ci)"
     labels:
