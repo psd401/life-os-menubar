@@ -43,6 +43,51 @@ public final class TaskListViewModel: ObservableObject {
     ).count
   }
 
+  /// The number for the menu bar icon. It describes the whole repo, so the
+  /// panel's search and filters don't change it. Today is 0 without
+  /// `read:project`, because the due dates are then unknown rather than absent.
+  public func menuBarCount(for setting: MenuBarCount) -> Int {
+    menuBarCount(for: setting, issues: issues, projectFieldAccess: projectFieldAccess)
+  }
+
+  /// The menu bar number as it changes, for the status item to render.
+  ///
+  /// Built from the values the publishers emit, never read back from the
+  /// properties: `@Published` emits before the property is set, so a read
+  /// inside the pipeline sees the old value. A refresh that gained
+  /// read:project would otherwise leave the Today badge at 0 until the next
+  /// sync.
+  public func menuBarCountPublisher(
+    for setting: AnyPublisher<MenuBarCount, Never>
+  ) -> AnyPublisher<(count: Int, kind: MenuBarCount), Never> {
+    Publishers.CombineLatest3($issues, $projectFieldAccess, setting)
+      .map { [weak self] issues, access, setting in
+        (
+          count: self?.menuBarCount(for: setting, issues: issues, projectFieldAccess: access) ?? 0,
+          kind: setting
+        )
+      }
+      .eraseToAnyPublisher()
+  }
+
+  private func menuBarCount(
+    for setting: MenuBarCount,
+    issues: [LifeOSIssue],
+    projectFieldAccess: ProjectFieldAccess
+  ) -> Int {
+    switch setting {
+    case .today:
+      projectFieldAccess == .available
+        ? TodayTaskPresentation.issues(from: issues, now: now(), calendar: calendar).count
+        : 0
+    case .inbox:
+      TaskListPresentation.sections(issues: issues, searchText: "")
+        .first { $0.status == .inbox }?.issues.count ?? 0
+    case .off:
+      0
+    }
+  }
+
   public var projectFieldMessage: String? {
     guard projectFieldAccess == .missingScope else {
       return nil

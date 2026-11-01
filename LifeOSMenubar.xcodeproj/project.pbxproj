@@ -26,7 +26,7 @@
 		B00000000000000000000017 /* QuickCaptureViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000017 /* QuickCaptureViewModel.swift */; };
 		B00000000000000000000018 /* ProjectFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000018 /* ProjectFields.swift */; };
 		B00000000000000000000019 /* GitHubProjectFieldClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000019 /* GitHubProjectFieldClient.swift */; };
-		B00000000000000000000020 /* TodayBadgePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000020 /* TodayBadgePreferenceStore.swift */; };
+		B00000000000000000000020 /* MenuBarCountPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000020 /* MenuBarCountPreferenceStore.swift */; };
 		B00000000000000000000022 /* TaskRepositoryValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000022 /* TaskRepositoryValidator.swift */; };
 		B00000000000000000000021 /* TaskRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000021 /* TaskRepository.swift */; };
 		B00000000000000000000023 /* DeviceFlowClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000023 /* DeviceFlowClient.swift */; };
@@ -63,6 +63,7 @@
 		B00000000000000000000220 /* TaskRepositoryFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000220 /* TaskRepositoryFixtures.swift */; };
 		B00000000000000000000219 /* TaskRepositoryValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000219 /* TaskRepositoryValidatorTests.swift */; };
 		B00000000000000000000218 /* TaskRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000218 /* TaskRepositoryTests.swift */; };
+		B00000000000000000000224 /* MenuBarCountPreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000224 /* MenuBarCountPreferenceStoreTests.swift */; };
 		B00000000000000000000222 /* DeviceFlowClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000222 /* DeviceFlowClientTests.swift */; };
 		B00000000000000000000223 /* DeviceFlowAuthorizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000223 /* DeviceFlowAuthorizerTests.swift */; };
 		B00000000000000000000401 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
@@ -108,7 +109,7 @@
 		F00000000000000000000017 /* QuickCaptureViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureViewModel.swift; sourceTree = "<group>"; };
 		F00000000000000000000018 /* ProjectFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFields.swift; sourceTree = "<group>"; };
 		F00000000000000000000019 /* GitHubProjectFieldClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubProjectFieldClient.swift; sourceTree = "<group>"; };
-		F00000000000000000000020 /* TodayBadgePreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayBadgePreferenceStore.swift; sourceTree = "<group>"; };
+		F00000000000000000000020 /* MenuBarCountPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarCountPreferenceStore.swift; sourceTree = "<group>"; };
 		F00000000000000000000022 /* TaskRepositoryValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRepositoryValidator.swift; sourceTree = "<group>"; };
 		F00000000000000000000021 /* TaskRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRepository.swift; sourceTree = "<group>"; };
 		F00000000000000000000023 /* DeviceFlowClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceFlowClient.swift; sourceTree = "<group>"; };
@@ -145,6 +146,7 @@
 		F00000000000000000000220 /* TaskRepositoryFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRepositoryFixtures.swift; sourceTree = "<group>"; };
 		F00000000000000000000219 /* TaskRepositoryValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRepositoryValidatorTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000218 /* TaskRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRepositoryTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000224 /* MenuBarCountPreferenceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarCountPreferenceStoreTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000222 /* DeviceFlowClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceFlowClientTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000223 /* DeviceFlowAuthorizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceFlowAuthorizerTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000301 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -229,7 +231,7 @@
 				F00000000000000000000017 /* QuickCaptureViewModel.swift */,
 				F00000000000000000000018 /* ProjectFields.swift */,
 				F00000000000000000000019 /* GitHubProjectFieldClient.swift */,
-				F00000000000000000000020 /* TodayBadgePreferenceStore.swift */,
+				F00000000000000000000020 /* MenuBarCountPreferenceStore.swift */,
 				F00000000000000000000022 /* TaskRepositoryValidator.swift */,
 				F00000000000000000000021 /* TaskRepository.swift */,
 				F00000000000000000000023 /* DeviceFlowClient.swift */,
@@ -288,6 +290,7 @@
 				F00000000000000000000220 /* TaskRepositoryFixtures.swift */,
 				F00000000000000000000219 /* TaskRepositoryValidatorTests.swift */,
 				F00000000000000000000218 /* TaskRepositoryTests.swift */,
+				F00000000000000000000224 /* MenuBarCountPreferenceStoreTests.swift */,
 				F00000000000000000000222 /* DeviceFlowClientTests.swift */,
 				F00000000000000000000223 /* DeviceFlowAuthorizerTests.swift */,
 			);
@@ -476,7 +479,7 @@
 				B00000000000000000000017 /* QuickCaptureViewModel.swift in Sources */,
 				B00000000000000000000018 /* ProjectFields.swift in Sources */,
 				B00000000000000000000019 /* GitHubProjectFieldClient.swift in Sources */,
-				B00000000000000000000020 /* TodayBadgePreferenceStore.swift in Sources */,
+				B00000000000000000000020 /* MenuBarCountPreferenceStore.swift in Sources */,
 				B00000000000000000000022 /* TaskRepositoryValidator.swift in Sources */,
 				B00000000000000000000021 /* TaskRepository.swift in Sources */,
 				B00000000000000000000023 /* DeviceFlowClient.swift in Sources */,
@@ -508,6 +511,7 @@
 				B00000000000000000000220 /* TaskRepositoryFixtures.swift in Sources */,
 				B00000000000000000000219 /* TaskRepositoryValidatorTests.swift in Sources */,
 				B00000000000000000000218 /* TaskRepositoryTests.swift in Sources */,
+				B00000000000000000000224 /* MenuBarCountPreferenceStoreTests.swift in Sources */,
 				B00000000000000000000222 /* DeviceFlowClientTests.swift in Sources */,
 				B00000000000000000000223 /* DeviceFlowAuthorizerTests.swift in Sources */,
 			);

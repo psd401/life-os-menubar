@@ -90,8 +90,8 @@ but they get no filter chips.
 
 ## 5. Optional Project v2 fields
 
-The **Today** view and the menu bar badge come from two date fields on the
-GitHub Project v2 items attached to your issues:
+The **Today** view and the menu bar's Today count come from two date fields on
+the GitHub Project v2 items attached to your issues:
 
 | Field name | Effect |
 |------------|--------|

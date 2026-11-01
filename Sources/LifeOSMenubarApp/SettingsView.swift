@@ -135,17 +135,31 @@ struct SettingsView: View {
           name: .quickCapture
         )
 
-        Toggle(
-          "Show Today count in the menu bar",
-          isOn: Binding(
+        Picker(
+          "Menu bar count",
+          selection: Binding(
             get: {
-              viewModel.isTodayBadgeEnabled
+              viewModel.menuBarCount
             },
             set: { newValue in
-              viewModel.setTodayBadgeEnabled(newValue)
+              viewModel.setMenuBarCount(newValue)
             }
           )
+        ) {
+          ForEach(MenuBarCount.allCases) { count in
+            Text(count.title).tag(count)
+          }
+        }
+
+        // The badge is a bare number; this is the only place that says what
+        // it counts.
+        Text(
+          "Today counts open tasks due today or overdue. Inbox counts tasks in "
+            + "Inbox. Both ignore the panel's search and filters."
         )
+        .font(NexusFont.caption1)
+        .foregroundStyle(palette.inkMuted)
+        .fixedSize(horizontal: false, vertical: true)
 
         Toggle(
           "Launch Life OS Menubar at login",

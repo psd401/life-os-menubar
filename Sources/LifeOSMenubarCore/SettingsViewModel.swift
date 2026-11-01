@@ -32,7 +32,7 @@ public final class SettingsViewModel: ObservableObject {
   @Published public private(set) var repositoryState: TaskRepositoryState = .idle
   @Published public private(set) var isRepositoryConfigured: Bool
   @Published public private(set) var isLaunchAtLoginEnabled: Bool
-  @Published public private(set) var isTodayBadgeEnabled: Bool
+  @Published public private(set) var menuBarCount: MenuBarCount
   @Published public private(set) var persistenceError: String?
   @Published public private(set) var launchAtLoginError: String?
   @Published public private(set) var badgePreferenceError: String?
@@ -41,7 +41,7 @@ public final class SettingsViewModel: ObservableObject {
   private let tokenStore: any TokenStoring
   private let validator: any GitHubTokenValidating
   private let launchAtLoginController: any LaunchAtLoginControlling
-  private let badgePreferenceStore: any TodayBadgePreferenceStoring
+  private let badgePreferenceStore: any MenuBarCountPreferenceStoring
   private let deviceFlow: any DeviceFlowAuthorizing
   private let verificationPageOpener: @MainActor @Sendable (URL) -> Void
   private let onSignOut: @MainActor () -> Void
@@ -56,8 +56,8 @@ public final class SettingsViewModel: ObservableObject {
     tokenStore: any TokenStoring,
     validator: any GitHubTokenValidating,
     launchAtLoginController: any LaunchAtLoginControlling,
-    badgePreferenceStore: any TodayBadgePreferenceStoring =
-      UserDefaultsTodayBadgePreferenceStore(),
+    badgePreferenceStore: any MenuBarCountPreferenceStoring =
+      UserDefaultsMenuBarCountPreferenceStore(),
     deviceFlow: any DeviceFlowAuthorizing = GitHubDeviceFlowAuthorizer(),
     // Opening a URL is AppKit's job, and Core has no AppKit, so the app target
     // injects the opener.
@@ -90,9 +90,9 @@ public final class SettingsViewModel: ObservableObject {
     }
 
     do {
-      self.isTodayBadgeEnabled = try badgePreferenceStore.loadIsEnabled()
+      self.menuBarCount = try badgePreferenceStore.loadCount()
     } catch {
-      self.isTodayBadgeEnabled = true
+      self.menuBarCount = .today
       self.badgePreferenceError = error.localizedDescription
     }
 
@@ -381,10 +381,10 @@ public final class SettingsViewModel: ObservableObject {
     }
   }
 
-  public func setTodayBadgeEnabled(_ isEnabled: Bool) {
+  public func setMenuBarCount(_ count: MenuBarCount) {
     do {
-      try badgePreferenceStore.saveIsEnabled(isEnabled)
-      isTodayBadgeEnabled = isEnabled
+      try badgePreferenceStore.saveCount(count)
+      menuBarCount = count
       badgePreferenceError = nil
     } catch {
       badgePreferenceError = error.localizedDescription
