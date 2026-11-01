@@ -14,7 +14,7 @@ Run from the repo root. These are the same commands CI runs
 # Lint — zero warnings required, no suppressions
 swift format lint --strict --recursive Sources Tests Package.swift
 
-# Unit tests (SwiftPM, fast — 128 tests in LifeOSMenubarCoreTests)
+# Unit tests (SwiftPM, fast — the LifeOSMenubarCoreTests suites)
 swift test
 
 # Full test run through the Xcode project (the authoritative test gate)
@@ -37,10 +37,10 @@ Auto-format with `swift format --in-place --recursive Sources Tests Package.swif
 There is no separate typecheck step: in Swift the build *is* the typecheck, which
 is why `.psd/verify.json` configures no `typecheck` command.
 
-There is no package manager step: the single dependency (KeyboardShortcuts)
-resolves through SwiftPM. Toolchain and OS requirements live in the
-[README](README.md#requirements) — one copy, because the deployment floor is
-about to move ([decision 0004](openwiki/decisions/0004-macos-26-floor.md)).
+There is no package manager step: KeyboardShortcuts resolves through SwiftPM,
+and NexusKit is a local package under `Vendor/`. Toolchain and OS requirements
+live in the [README](README.md#requirements) — one copy, so the macOS 26 floor
+([decision 0004](openwiki/decisions/0004-macos-26-floor.md)) is stated once.
 
 ## Architecture map
 
