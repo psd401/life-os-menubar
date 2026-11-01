@@ -607,10 +607,15 @@ private struct TaskRow: View {
           .foregroundStyle(palette.inkSubtle)
           .frame(minWidth: NexusSpace.s10, alignment: .trailing)
 
+        // The title takes the row's slack. Without the priority, the fixed
+        // columns beside it — number, due date, priority code, chevron — would
+        // split the 400pt panel's width evenly with it and truncate titles that
+        // have room to wrap.
         Text(issue.title)
           .font(NexusFont.body)
           .foregroundStyle(palette.ink)
           .lineLimit(2)
+          .layoutPriority(1)
 
         Spacer(minLength: NexusSpace.s1)
 

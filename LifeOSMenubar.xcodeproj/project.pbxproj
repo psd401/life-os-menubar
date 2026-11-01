@@ -514,6 +514,7 @@
 		};
 		K00000000000000000000002 /* NexusKit */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = Q00000000000000000000002 /* XCLocalSwiftPackageReference "Vendor/NexusKit" */;
 			productName = NexusKit;
 		};
 /* End XCSwiftPackageProductDependency section */
