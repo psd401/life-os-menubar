@@ -37,6 +37,22 @@ public enum LabelRules {
   public static let defaultStatus = "status:inbox"
   public static let defaultPriority = "priority:p2"
 
+  /// The label definitions a task repo must already contain for the app to
+  /// work. `LabelRules` repairs a *missing contract label on a task*, but
+  /// nothing here creates the label definitions in the repo — that is the
+  /// bootstrap step in `docs/life-os-repo-standard.md`, and
+  /// `TaskRepositoryValidator` is what checks it was done.
+  ///
+  /// Derived from `TaskStatusSection` so the panel's sections and this list
+  /// cannot drift apart. `status:done` is not a section — a done task is
+  /// closed, so it never appears in the panel — but closing a task writes it,
+  /// so the label has to exist.
+  public static let requiredLabelNames: [String] =
+    TaskStatusSection.allCases.map(\.labelName)
+    + ["status:done"]
+    + ["priority:p0", "priority:p1", "priority:p2", "priority:p3"]
+    + ["type:task", "source:manual"]
+
   public static func family(for labelName: String) -> ContractLabelFamily? {
     ContractLabelFamily.allCases.first { $0.contains(labelName) }
   }

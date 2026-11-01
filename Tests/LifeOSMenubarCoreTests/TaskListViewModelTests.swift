@@ -315,6 +315,39 @@ struct TaskListViewModelTests {
     #expect(inboxSection.issues.contains(created))
     #expect(try cache.load()?.issues.map(\.number) == [10, 11])
   }
+  @Test
+  func changingTheTaskRepositoryDropsTheOtherRepositorysCachedTasks() async throws {
+    let cache = ViewModelCacheStore(
+      snapshot: IssueCacheSnapshot(
+        issues: [viewModelTestIssue(number: 7)],
+        lastSyncedAt: Date(timeIntervalSince1970: 1_785_100_000),
+        lastFullSyncedAt: Date(timeIntervalSince1970: 1_785_100_000),
+        projectFieldAccess: .available
+      )
+    )
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: ViewModelFilterStore()
+    )
+    #expect(!viewModel.issues.isEmpty)
+
+    viewModel.resetForRepositoryChange()
+
+    #expect(viewModel.issues.isEmpty)
+    #expect(viewModel.lastSyncedAt == nil)
+    #expect(viewModel.projectFieldAccess == .unknown)
+    // The watermark has to be cleared on disk too, or the next delta refresh
+    // would ask the new repo only for issues changed since the old repo's sync.
+    let persisted = try #require(try cache.load())
+    #expect(persisted.issues.isEmpty)
+    #expect(persisted.lastSyncedAt == nil)
+    #expect(persisted.lastFullSyncedAt == nil)
+  }
+
 }
 
 private func viewModelTestIssue(number: Int) -> LifeOSIssue {

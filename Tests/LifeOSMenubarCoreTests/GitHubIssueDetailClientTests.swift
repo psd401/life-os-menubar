@@ -86,18 +86,59 @@ struct GitHubIssueDetailClientTests {
     }
   }
 
-  private func makeDetailClient() -> GitHubGraphQLIssueDetailClient {
+  @Test
+  func sendsTheConfiguredRepositoryRatherThanAnyBuiltInDefault() async throws {
+    DetailURLProtocolStub.handler = { request in
+      let payload = try JSONDecoder().decode(
+        DetailRequest.self,
+        from: try detailRequestBody(from: request)
+      )
+      #expect(payload.variables.owner == "acme")
+      #expect(payload.variables.repository == "work-tasks")
+      return try detailResponse(
+        for: request,
+        json: issueDetailJSON(comments: "[]", hasNextPage: false, endCursor: "null")
+      )
+    }
+
+    let client = makeDetailClient(
+      repositoryStore: InMemoryTaskRepositoryStore(
+        repository: TaskRepository(owner: "acme", name: "work-tasks")
+      )
+    )
+    _ = try await client.fetchIssueDetail(token: "detail-token", number: 42)
+  }
+
+  @Test
+  func refusesToGuessARepositoryWhenNoneIsConfigured() async {
+    DetailURLProtocolStub.handler = { _ in
+      Issue.record("An unconfigured install must not reach GitHub.")
+      throw URLError(.badURL)
+    }
+
+    await #expect(throws: TaskRepositoryConfigurationError.notConfigured) {
+      try await makeDetailClient(repositoryStore: InMemoryTaskRepositoryStore())
+        .fetchIssueDetail(token: "detail-token", number: 42)
+    }
+  }
+
+  private func makeDetailClient(
+    repositoryStore: any TaskRepositoryStoring = TaskRepositoryFixture.store
+  ) -> GitHubGraphQLIssueDetailClient {
     let configuration = URLSessionConfiguration.ephemeral
     configuration.protocolClasses = [DetailURLProtocolStub.self]
     return GitHubGraphQLIssueDetailClient(
       session: URLSession(configuration: configuration),
-      endpoint: URL(string: "https://example.test/graphql")!
+      endpoint: URL(string: "https://example.test/graphql")!,
+      repositoryStore: repositoryStore
     )
   }
 }
 
 private struct DetailRequest: Decodable {
   struct Variables: Decodable {
+    let owner: String
+    let repository: String
     let number: Int
     let cursor: String?
   }

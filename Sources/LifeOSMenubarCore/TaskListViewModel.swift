@@ -208,6 +208,28 @@ public final class TaskListViewModel: ObservableObject {
     persistFilters()
   }
 
+  /// Drops every cached task and both sync watermarks.
+  ///
+  /// Called when the configured task repository changes. The cache is keyed by
+  /// issue number only, so without this the panel would show the previous
+  /// repo's tasks next to the new repo's, and the delta-sync watermark would
+  /// suppress the very fetch that could correct it.
+  public func resetForRepositoryChange() {
+    issues = []
+    lastSyncedAt = nil
+    lastFullSyncedAt = nil
+    projectFieldAccess = .unknown
+    errorMessage = nil
+
+    do {
+      try cacheStore.save(.empty)
+    } catch {
+      errorMessage =
+        "The task repository changed, but the old cache could not be cleared: "
+        + error.localizedDescription
+    }
+  }
+
   public func reconcileRemoteIssue(_ issue: LifeOSIssue) {
     if issue.state == .closed {
       issues.removeAll { $0.number == issue.number }
