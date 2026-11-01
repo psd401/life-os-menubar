@@ -54,6 +54,16 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     window?.makeKeyAndOrderFront(nil)
     application.activate(ignoringOtherApps: true)
 
+    // Open with nothing focused. Otherwise SwiftUI focuses the first focusable
+    // control — the shortcut recorder, now that the token field sits under
+    // Advanced — and a focused recorder is already recording: the next modifier
+    // chord (⌘W to close this window, say) becomes the quick-capture shortcut,
+    // and the global hot key is paused meanwhile. Async, so it runs after
+    // SwiftUI's own initial focus.
+    DispatchQueue.main.async { [weak self] in
+      self?.window?.makeFirstResponder(nil)
+    }
+
     // This window and its hosted SwiftUI view are built once and reused, so a
     // `.task` on the view would only ever run on the first open. Re-checking
     // here is what keeps the signed-in badge honest after a token is revoked

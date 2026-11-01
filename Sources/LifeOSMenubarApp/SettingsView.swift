@@ -276,7 +276,7 @@ struct SettingsView: View {
         .foregroundStyle(palette.inkMuted)
         .fixedSize(horizontal: false, vertical: true)
 
-        SecureField("Fine-grained personal access token", text: $viewModel.token)
+        SecureField("Token", text: $viewModel.token, prompt: Text("Paste your token"))
           .textContentType(.password)
           .font(NexusFont.body)
           .frame(height: NexusSize.macControl)
