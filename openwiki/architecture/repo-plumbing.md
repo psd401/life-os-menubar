@@ -15,7 +15,7 @@ and was merged into `main` (merge commit, history preserved) and deleted — see
 
 ## CI
 
-`.github/workflows/ci.yml` — `CI / Swift validation`, `macos-26`, 20-minute
+`.github/workflows/ci.yml` — `CI / Swift validation`, `xcode-27`, 20-minute
 timeout, triggered on `pull_request` and `push` to `main`. Four steps, in order:
 
 1. `swift format lint --strict --recursive Sources Tests Package.swift`
@@ -25,6 +25,13 @@ timeout, triggered on `pull_request` and `push` to `main`. Four steps, in order:
 
 `CODE_SIGNING_ALLOWED=NO` is what lets an unsigned runner build and test the app;
 signing and notarization are a separate pipeline and out of scope here.
+
+The runner label is load-bearing and not the obvious one. `macos-26` can target
+the macOS 26 floor but its Xcode 26 type checker fails on a vendored NexusKit
+preview file, which cannot be edited. `xcode-27` (macOS 27 / Xcode 27) matches
+the development toolchain and compiles it — see
+[decision 0004](../decisions/0004-macos-26-floor.md). It is a preview image
+today; move to the stable macOS 27 label when there is one.
 
 Also on the repo: `claude-code-review.yml` (AI review on every PR) and
 `claude.yml` (responds to `@claude` mentions), both using

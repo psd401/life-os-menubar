@@ -59,9 +59,32 @@ platform. The Release `xcodebuild build` reports
 `--deployment-target 26.0`, which is how the move was verified rather than
 assumed.
 
-CI moved from `runs-on: macos-15` to `runs-on: macos-26`, the arm64 image that
-ships Xcode 26. `macos-15` ships Xcode 16 and cannot build for macOS 26 at all,
-so leaving that line alone would have failed every check on this PR.
+CI moved off `runs-on: macos-15` — that image ships Xcode 16 and cannot build
+for macOS 26 at all, so leaving the line alone would have failed every check.
+
+The first attempt was `macos-26`, and it failed, which is worth recording
+because the obvious choice is the wrong one. The Xcode 26 type checker gives
+up on one of NexusKit's canvas-preview files:
+
+```
+Vendor/NexusKit/Sources/NexusKit/NexusGallery2.swift:223:13: error: the
+compiler is unable to type-check this expression in reasonable time; try
+breaking up the expression into distinct sub-expressions
+```
+
+The same file compiles on the dev machine's Xcode 27.2. The file is vendored,
+so "break up the expression" is not available: editing it would fork the
+design system, and it is a `NexusGallery2` preview rather than anything the
+app calls, so there is nothing to work around in our own code either.
+
+CI therefore runs on **`xcode-27`** — macOS 27 with Xcode 27, the toolchain the
+app is developed against. That label is currently a GitHub **preview** image;
+move to the stable macOS 27 label when one exists.
+
+The practical rule this leaves behind: **the CI runner has to match the
+toolchain NexusKit compiles on, not merely the one that can target the
+deployment floor.** Those are different constraints, and only the second one
+is obvious from the deployment target.
 
 The README's requirements block — the single copy of the floor — now reads
 macOS 26 / Xcode 26 / Swift 6.2 and links here for the reason.

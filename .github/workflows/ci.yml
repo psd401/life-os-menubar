@@ -18,9 +18,14 @@ concurrency:
 jobs:
   validate:
     name: Swift validation
-    # macOS 26 floor (decision 0004): macos-15 ships Xcode 16 and cannot build
-    # for macOS 26, which NexusKit requires.
-    runs-on: macos-26
+    # macOS 26 floor (decision 0004). `macos-15` ships Xcode 16 and cannot build
+    # for macOS 26 at all. `macos-26` can, but its Xcode 26 type checker gives up
+    # on NexusKit's `NexusGallery2.swift` ("unable to type-check this expression
+    # in reasonable time") — and that file is vendored, so it cannot be fixed or
+    # excluded here. `xcode-27` is macOS 27 with Xcode 27, the toolchain the app is
+    # actually developed against, and it compiles the package. It is a preview
+    # label: move to the stable macOS 27 label once one exists.
+    runs-on: xcode-27
     timeout-minutes: 20
 
     steps:
