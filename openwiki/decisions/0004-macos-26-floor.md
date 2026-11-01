@@ -11,8 +11,9 @@ okf_version: "0.1"
 
 The app currently targets macOS 15: `Package.swift` declares
 `platforms: [.macOS(.v15)]` and the Xcode project sets
-`MACOSX_DEPLOYMENT_TARGET = 15.0` in all four build configurations. CI runs on
-the `macos-15` runner.
+`MACOSX_DEPLOYMENT_TARGET = 15.0` in six places in `project.pbxproj` (the
+project-level Release config plus Debug and Release for each of the three
+targets). CI runs on the `macos-15` runner.
 
 Adopting NexusKit ([0003](0003-nexus-design-system.md)) requires macOS 26 APIs.
 That makes the floor a consequence of the design decision rather than an
@@ -42,6 +43,9 @@ platform when NexusKit lands. Do not ship a compatibility path for macOS 15.
   `.github/workflows/ci.yml` pins `runs-on: macos-15`; that line changes in the
   same PR as the deployment target, or CI fails. This is the easiest part of #19
   to forget.
-- The four `MACOSX_DEPLOYMENT_TARGET` entries in `project.pbxproj` and the
+- **Every** `MACOSX_DEPLOYMENT_TARGET` entry in `project.pbxproj` and the
   `Package.swift` platform must move together; a mismatch produces an app that
-  builds through SwiftPM and fails through Xcode, or vice versa.
+  builds through SwiftPM and fails through Xcode, or vice versa. Do not trust a
+  count from this page — run
+  `grep -c MACOSX_DEPLOYMENT_TARGET LifeOSMenubar.xcodeproj/project.pbxproj`
+  and change them all (six at the time of writing).

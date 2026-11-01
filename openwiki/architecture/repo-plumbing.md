@@ -91,6 +91,14 @@ screenshot of the running app instead (see the PR evidence bar in
 `commit_learnings` is `false` because this is a public repo; agent session notes
 stay out of its history.
 
+`strictness` is `block`, which means an agent session running the
+`psd-coding-system` plugin cannot finish until the gate is green. **The gate is
+only satisfiable on macOS with Xcode installed** — two of its three commands are
+`xcodebuild`. An agent working from a Linux container cannot run it and will
+block with no path to green; that is the right answer for a macOS-only app, but
+it means agent-assisted work on this repo has to happen on a Mac. For anyone
+without the plugin the file is inert: nothing in CI reads `.psd/verify.json`.
+
 ## Community health files
 
 This repo carries only `LICENSE` (MIT) locally. `CONTRIBUTING.md`,

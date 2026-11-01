@@ -37,8 +37,10 @@ Auto-format with `swift format --in-place --recursive Sources Tests Package.swif
 There is no separate typecheck step: in Swift the build *is* the typecheck, which
 is why `.psd/verify.json` configures no `typecheck` command.
 
-Requirements: macOS 15+, Xcode 16+ / Swift 6. There is no package manager to
-install — the single dependency (KeyboardShortcuts) resolves through SwiftPM.
+There is no package manager step: the single dependency (KeyboardShortcuts)
+resolves through SwiftPM. Toolchain and OS requirements live in the
+[README](README.md#requirements) — one copy, because the deployment floor is
+about to move ([decision 0004](openwiki/decisions/0004-macos-26-floor.md)).
 
 ## Architecture map
 

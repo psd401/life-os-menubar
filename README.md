@@ -42,7 +42,19 @@ xcodebuild test \
   -scheme LifeOSMenubar \
   -destination 'platform=macOS' \
   CODE_SIGNING_ALLOWED=NO
+
+# Release build
+xcodebuild build \
+  -project LifeOSMenubar.xcodeproj \
+  -scheme LifeOSMenubar \
+  -configuration Release \
+  -destination 'platform=macOS' \
+  CODE_SIGNING_ALLOWED=NO
 ```
+
+These four are exactly what CI runs — see `.github/workflows/ci.yml` and
+`.psd/verify.json`. The install steps below add `-derivedDataPath build` to the
+same release build so the output lands somewhere predictable.
 
 ## Install
 
@@ -61,14 +73,29 @@ xcodebuild build \
   -derivedDataPath build \
   CODE_SIGNING_ALLOWED=NO
 
-cp -R build/Build/Products/Release/LifeOSMenubar.app /Applications/
+rm -rf /Applications/LifeOSMenubar.app
+ditto build/Build/Products/Release/LifeOSMenubar.app /Applications/LifeOSMenubar.app
 open /Applications/LifeOSMenubar.app
 ```
 
-Then open **Settings** from the panel and paste your token. The app runs as an
-accessory application with no Dock icon — look for its menu bar item. The token
-is stored only in the macOS Keychain, never on disk in the clear. Enable **Launch
-at Login** in Settings if you want it always running.
+Remove the old bundle first and copy with `ditto` rather than `cp -R`: copying a
+`.app` directory over an existing one **merges** the two, which leaves stale
+binaries and resources from the previous build inside the bundle and fails
+silently. This matters on every upgrade, not just the first install.
+
+Then open **Settings** from the panel and paste your token. The token is stored
+only in the macOS Keychain, never on disk in the clear. Enable **Launch at
+Login** in Settings if you want it always running.
+
+**If nothing seems to happen:** that is expected. The app is an accessory
+application — no Dock icon, no app-switcher entry, no window on launch. Its only
+affordance is a menu bar item, which is easy to miss on a crowded menu bar.
+Confirm it is running with `pgrep -x LifeOSMenubar`.
+
+The build is unsigned (`CODE_SIGNING_ALLOWED=NO`). A locally built app carries no
+quarantine attribute, so Gatekeeper does not block it — but it is also not
+notarized, so do not expect it to survive being zipped and sent to another Mac.
+Signing and notarization are out of scope for v1.1.
 
 To contribute, see [AGENTS.md](AGENTS.md) for the build/test/lint commands, the
 architecture map, and the evidence a PR must carry.

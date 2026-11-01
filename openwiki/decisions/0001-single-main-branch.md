@@ -43,5 +43,9 @@ reachable from `main`, then deleted. CI triggers moved from `dev` to `main`.
   `feature/<issue>-<slug>` or `fix/<slug>`.
 - Local clones that tracked `dev` need `git remote prune origin` and a
   re-checkout of `main`.
+- Deleting a base branch **closes** any PR targeting it; GitHub does not
+  retarget them. `gh pr list --state open --json baseRefName` returned no open
+  PRs before `dev` was deleted, so nothing was lost — but that check is the
+  precondition, not a formality.
 - No release branch exists. When signing and distribution arrive, tags on `main`
   are the intended mechanism, not a branch.

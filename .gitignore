@@ -11,3 +11,12 @@ xcuserdata/
 .claude/worktrees/
 .psd/last-gate-result
 .psd/finalizing
+
+# Defensive only — this app keeps its token in the macOS Keychain and never
+# writes credentials into the repo. These patterns exist so a stray local file
+# cannot be committed to a public repo by accident (standard 04, rule 15a).
+.env
+.env.*
+*.pem
+*.key
+*.p12
