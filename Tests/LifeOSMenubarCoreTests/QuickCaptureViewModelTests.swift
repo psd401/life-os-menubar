@@ -74,6 +74,39 @@ struct QuickCaptureViewModelTests {
     )
   }
 
+  /// The panel quick-add composer binds only the title: it never touches `body`,
+  /// so a title-only submit has to send an empty body rather than carrying over
+  /// whatever the capture window last had. The label contract and draft reset are
+  /// already covered by `successfulCaptureUsesDefaultsAndClearsDraft`; the labels
+  /// are asserted here against `LabelRules` so the two tests cannot drift apart.
+  @Test
+  func titleOnlySubmitSendsAnEmptyBody() async throws {
+    let client = QuickCaptureClientStub(result: .success(quickCaptureIssue()))
+    let viewModel = QuickCaptureViewModel(client: client)
+    viewModel.title = "Composed task"
+
+    _ = await viewModel.submit(token: "token")
+    let call = try #require(await client.calls.first)
+
+    #expect(call.body.isEmpty)
+    #expect(call.labels.first == LabelRules.defaultStatus)
+    #expect(call.labels.last == LabelRules.defaultPriority)
+  }
+
+  /// The composer refocuses its field when the panel reopens, which rides on the
+  /// focus-request counter rather than on `onAppear`.
+  @Test
+  func requestTitleFocusAdvancesTheFocusRequestCounter() {
+    let viewModel = QuickCaptureViewModel(
+      client: QuickCaptureClientStub(result: .failure(.network))
+    )
+    let initialRequest = viewModel.titleFocusRequest
+
+    viewModel.requestTitleFocus()
+
+    #expect(viewModel.titleFocusRequest == initialRequest &+ 1)
+  }
+
   @Test
   func cancelRestoresFreshCaptureDefaults() {
     let viewModel = QuickCaptureViewModel(

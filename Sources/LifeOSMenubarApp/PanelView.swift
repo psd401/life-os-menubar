@@ -5,6 +5,7 @@ import SwiftUI
 struct PanelView: View {
   @ObservedObject var settingsViewModel: SettingsViewModel
   @ObservedObject var taskListViewModel: TaskListViewModel
+  @ObservedObject var quickAddViewModel: QuickCaptureViewModel
   @State private var selectedIssue: LifeOSIssue?
   @State private var listMode = PanelListMode.all
   let openSettings: () -> Void
@@ -47,6 +48,16 @@ struct PanelView: View {
             .accessibilityLabel("Refreshing tasks")
         }
       }
+
+      QuickAddComposerView(
+        viewModel: quickAddViewModel,
+        tokenProvider: {
+          settingsViewModel.token
+        },
+        onCreated: { createdIssue in
+          taskListViewModel.reconcileRemoteIssue(createdIssue)
+        }
+      )
 
       Picker("Task view", selection: $listMode) {
         Text("All").tag(PanelListMode.all)
@@ -155,6 +166,104 @@ struct PanelView: View {
 private enum PanelListMode: String, CaseIterable {
   case all
   case today
+}
+
+/// Inline quick-add pinned above the scrolling task list.
+///
+/// Title-only by design: it leaves `body` and `priority` on the view model
+/// untouched so every task it creates carries the Agent Operating Contract
+/// defaults (`status:inbox`, `type:task`, `source:manual`, `priority:p2`). The
+/// capture window remains the place to override priority or add notes.
+///
+/// Success is reported in the composer rather than by making the new row
+/// visible. The row can legitimately be filtered out of view — by the Today
+/// mode (a composed task has no due date), by the search query, or by an
+/// active label filter — and the alternative, resetting the mode, query and
+/// filters on every add, throws away view state the user set deliberately,
+/// including the filter selection that `TaskListViewModel` persists to disk.
+private struct QuickAddComposerView: View {
+  @ObservedObject var viewModel: QuickCaptureViewModel
+  @FocusState private var isTitleFocused: Bool
+  @State private var createdIssueNumber: Int?
+
+  let tokenProvider: @MainActor () -> String
+  let onCreated: (LifeOSIssue) -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 8) {
+        // The glyph is what tells this field apart from the visually identical
+        // search field a couple of rows down; without it the panel has two
+        // bare rounded-border fields and no cue as to which does what.
+        Image(systemName: "plus.circle")
+          .foregroundStyle(.secondary)
+          .accessibilityHidden(true)
+
+        TextField("Add a task to Inbox", text: $viewModel.title)
+          .textFieldStyle(.roundedBorder)
+          .focused($isTitleFocused)
+          .onSubmit(submit)
+          .disabled(viewModel.isSubmitting)
+          .accessibilityLabel("New task title")
+
+        if viewModel.isSubmitting {
+          ProgressView()
+            .controlSize(.small)
+            .accessibilityLabel("Adding task")
+        }
+
+        Button("Add task", action: submit)
+          .disabled(!viewModel.canSubmit)
+          .accessibilityLabel("Add task to Inbox")
+          .accessibilityHint("Enter a task title to enable this button")
+      }
+
+      if let errorMessage = viewModel.errorMessage {
+        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+          .font(.caption)
+          .foregroundStyle(.red)
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityLabel("Add task error: \(errorMessage)")
+      } else if let createdIssueNumber {
+        Label("Added #\(createdIssueNumber) to Inbox", systemImage: "checkmark.circle.fill")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .accessibilityLabel("Added task number \(createdIssueNumber) to Inbox")
+      }
+    }
+    // Clear the confirmation once the next title is being typed. Keyed on a
+    // non-empty title on purpose: the success path itself empties the field, so
+    // keying on any change would race the confirmation away as it appears.
+    .onChange(of: viewModel.title) {
+      if !viewModel.title.isEmpty {
+        createdIssueNumber = nil
+      }
+    }
+    .onAppear {
+      isTitleFocused = true
+    }
+    // NSPopover reuses one hosting controller, so `onAppear` is not a reliable
+    // panel-open signal; the counter the panel bumps on open is.
+    .onChange(of: viewModel.titleFocusRequest) {
+      isTitleFocused = true
+    }
+  }
+
+  private func submit() {
+    guard viewModel.canSubmit else {
+      return
+    }
+    createdIssueNumber = nil
+    Task {
+      if let createdIssue = await viewModel.submit(token: tokenProvider()) {
+        onCreated(createdIssue)
+        createdIssueNumber = createdIssue.number
+      }
+      // Keep the caret in the field either way: ready for the next task on
+      // success, and on the retained text after a failure.
+      isTitleFocused = true
+    }
+  }
 }
 
 private struct FilterControlsView: View {

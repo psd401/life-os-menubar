@@ -31,8 +31,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       viewModel: settingsViewModel,
       taskListViewModel: taskListViewModel
     )
+    // One client, two independent drafts: the capture window and the panel
+    // composer must not share title/priority state, or opening the hotkey window
+    // would wipe whatever is half-typed in the panel.
+    let issueCreationClient = GitHubRESTIssueClient()
+    let quickAddViewModel = QuickCaptureViewModel(client: issueCreationClient)
     let quickCaptureWindowController = QuickCaptureWindowController(
-      viewModel: QuickCaptureViewModel(client: GitHubRESTIssueClient()),
+      viewModel: QuickCaptureViewModel(client: issueCreationClient),
       tokenProvider: {
         settingsViewModel.token
       },
@@ -47,6 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       rootView: PanelView(
         settingsViewModel: settingsViewModel,
         taskListViewModel: taskListViewModel,
+        quickAddViewModel: quickAddViewModel,
         openSettings: {
           settingsWindowController.showSettings()
         },
@@ -64,6 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       taskListViewModel: taskListViewModel,
       settingsViewModel: settingsViewModel,
       onPanelOpen: {
+        quickAddViewModel.requestTitleFocus()
         Task {
           await taskListViewModel.refresh(token: settingsViewModel.token)
         }
