@@ -65,7 +65,10 @@ extension TaskRepository {
       throw TaskRepositorySlugError.malformed(trimmed)
     }
     guard owner.unicodeScalars.allSatisfy(ownerCharacters.contains),
-      name.unicodeScalars.allSatisfy(nameCharacters.contains)
+      name.unicodeScalars.allSatisfy(nameCharacters.contains),
+      // GitHub never allows these names, and in an API path they'd act as
+      // relative segments rather than a repository.
+      name != ".", name != ".."
     else {
       throw TaskRepositorySlugError.invalidCharacters(trimmed)
     }

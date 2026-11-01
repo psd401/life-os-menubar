@@ -51,6 +51,18 @@ struct TaskRepositoryTests {
   }
 
   @Test
+  func rejectsDotOnlyRepositoryNamesThatWouldBecomePathSegments() {
+    // GitHub never allows "." or ".." as a repository name, and either one
+    // would turn repos/<owner>/<name>/… into a relative path segment.
+    #expect(throws: TaskRepositorySlugError.invalidCharacters("octocat/..")) {
+      try TaskRepository.parse("octocat/..")
+    }
+    #expect(throws: TaskRepositorySlugError.invalidCharacters("octocat/.")) {
+      try TaskRepository.parse("octocat/.")
+    }
+  }
+
+  @Test
   func acceptsDotsAndUnderscoresInTheRepositoryName() throws {
     let repository = try TaskRepository.parse("octo-cat/my_tasks.v2")
 

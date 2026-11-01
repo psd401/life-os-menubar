@@ -102,9 +102,11 @@ Both are optional, and **read-only to the app** — it sends no Project v2
 mutations. To use them: create a Project v2, add a date field named exactly
 `Due Date` (and optionally `Defer Until`), and add your task issues to it.
 
-Reading these fields requires a token with the **`read:project`** scope. Without
-it, task sync, filtering, detail actions, and quick capture all keep working;
-the panel and Settings show a message saying Today dates are unavailable.
+Reading these fields from a Project you own requires the classic
+**`read:project`** scope, which a fine-grained token cannot have (see
+[Token scopes](#8-token-scopes)). Without it, task sync, filtering, detail
+actions, and quick capture all keep working; the panel and Settings show a
+message saying Today dates are unavailable.
 
 ## 6. Bootstrap a fresh repository
 
@@ -118,8 +120,10 @@ scripts/bootstrap-task-repo.sh --repo owner/repo --dry-run
 scripts/bootstrap-task-repo.sh --repo owner/repo
 ```
 
-Re-running is safe: a label that already exists is left alone. Pass
-`--force-color` to overwrite existing labels' colors with the script's.
+Re-running is safe: a label that already exists is left alone. Pass `--force`
+to overwrite existing labels' colors and descriptions with the script's. Any
+other failure — no write access, a mistyped repository, the network — is
+printed as `FAILED` and the script exits non-zero.
 
 The script needs the [GitHub CLI](https://cli.github.com) authenticated with
 write access to the repository.
@@ -156,10 +160,9 @@ gh api "repos/$REPO/labels?per_page=100" --jq '.[].name' | sort
 
 1. Build and install the app (see the [README](../README.md#install)).
 2. Open **Settings** from the panel's `…` menu.
-3. Under **GitHub**, paste a fine-grained personal access token with read and
-   write access to issues on your task repository — plus `read:project` if you
-   want Today's dates — and select **Save and validate token**. The token is
-   stored only in your macOS Keychain.
+3. Under **GitHub**, paste a token (see [Token scopes](#8-token-scopes) for
+   which kind) and select **Save and validate token**. The token is stored
+   only in your macOS Keychain.
 4. Under **Task repository**, enter `owner/repo` and select
    **Save and validate repository**.
 
@@ -171,13 +174,14 @@ misread.
 
 ## 8. Token scopes
 
-A fine-grained personal access token scoped to the task repository with:
+Pick one, by whether you want the Today view:
 
-| Permission | Why |
-|------------|-----|
-| Issues: read and write | Read the task list; add comments, change labels, close tasks, create tasks |
-| Metadata: read | Required alongside Issues; also what the label check reads |
-| `read:project` (classic scope) | Optional. The Today view's `Due Date` / `Defer Until` |
+| Token | Grants | Today view |
+|-------|--------|------------|
+| **Fine-grained** personal access token, scoped to the task repository only: **Issues** read and write (GitHub adds **Metadata** read automatically) | Exactly that one repository's issues. The least-privilege choice. | **Off.** Fine-grained tokens can reach Projects only through an organization permission, so a Project you own is out of reach. |
+| **Classic** personal access token with `repo` and `read:project` | `repo` is read *and write* on **every** repository your account can reach, including private and organization ones. | On. |
+
+Everything except Today works the same on both.
 
 ## 9. Troubleshooting
 
