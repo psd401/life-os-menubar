@@ -146,8 +146,11 @@ It is not a secret and does not belong in the Keychain or Secrets Manager.
 5. Copy the **Client ID** into `GitHubOAuthApp.clientID` and open a PR. Do not
    generate a client secret; nothing in this app uses one.
 
-Until that constant is filled in, **Sign in with GitHub** is disabled and
-Settings explains why. The advanced token path works regardless.
+This is done: the psd401 app "Life OS Menubar" is registered with Device Flow
+enabled, and its client ID `Ov23liwioDuanmFQLbcZ` is in the constant. The steps
+stay here for anyone who forks the app and registers their own. If the constant
+is empty, **Sign in with GitHub** is disabled and Settings explains why; the
+advanced token path works regardless.
 
 ## Task sync
 

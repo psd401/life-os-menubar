@@ -9,11 +9,12 @@ import Foundation
 /// Manager that standard 04 rule 15a requires for real secrets. This constant
 /// is the only credential in the codebase.
 public enum GitHubOAuthApp {
-  /// Empty until the OAuth App is registered under the psd401 org (see the
-  /// README). While it is empty, `GitHubDeviceFlowAuthorizer.isAvailable` is
-  /// false, Settings disables "Sign in with GitHub" and says why, and the
-  /// advanced token path is the only way to authenticate.
-  public static let clientID = ""
+  /// The "Life OS Menubar" OAuth App registered under the psd401 org, with
+  /// Device Flow enabled. If this is ever emptied,
+  /// `GitHubDeviceFlowAuthorizer.isAvailable` turns false, Settings disables
+  /// "Sign in with GitHub" and says why, and the advanced token path is the
+  /// only way to authenticate.
+  public static let clientID = "Ov23liwioDuanmFQLbcZ"
 
   /// Classic OAuth scopes. `read:project` is what lights up the Today view:
   /// user-owned Projects v2 is unreachable with a fine-grained token's
