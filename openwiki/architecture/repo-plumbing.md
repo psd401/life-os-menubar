@@ -15,7 +15,7 @@ and was merged into `main` (merge commit, history preserved) and deleted — see
 
 ## CI
 
-`.github/workflows/ci.yml` — `CI / Swift validation`, `macos-15`, 20-minute
+`.github/workflows/ci.yml` — `CI / Swift validation`, `xcode-27`, 20-minute
 timeout, triggered on `pull_request` and `push` to `main`. Four steps, in order:
 
 1. `swift format lint --strict --recursive Sources Tests Package.swift`
@@ -25,6 +25,13 @@ timeout, triggered on `pull_request` and `push` to `main`. Four steps, in order:
 
 `CODE_SIGNING_ALLOWED=NO` is what lets an unsigned runner build and test the app;
 signing and notarization are a separate pipeline and out of scope here.
+
+The runner is `xcode-27` (macOS 27 / Xcode 27), the toolchain the app is
+developed against — see [decision 0004](../decisions/0004-macos-26-floor.md).
+`macos-26` (Xcode 26.6) failed on a vendored NexusKit preview file until NexusKit
+`2cf8879` fixed it upstream; Xcode 26.6 now builds the app, and CodeQL's autobuild
+(below) proves that on every PR. `xcode-27` is a preview image today; move to
+the stable macOS 27 label when there is one.
 
 ### AI review
 
@@ -67,6 +74,22 @@ autobuilds Swift on GitHub's standard macOS runner with that image's default
 Xcode (`macos-26-arm64`, Xcode 26.6, as of 2026-11-01), so everything the app
 compiles, vendored code included, must build with that toolchain.
 
+NexusKit at `4affbd15` did not: the `#Preview` at
+`Vendor/NexusKit/Sources/NexusKit/NexusGallery2.swift:223` failed to type-check
+on Xcode 26.6, and `Analyze (swift)` failed. Moving the scan to `xcode-27` was no
+way out: Xcode 27 ships Swift 6.4, and CodeQL supports Swift up to 6.3. So the
+fix went upstream — the Nexus artifact, then
+[psd-dev-standards#194](https://github.com/psd401/psd-dev-standards/pull/194),
+re-vendored here at `2cf8879`. The standing lesson: a NexusKit change that
+compiles only on Xcode 27 breaks this repo's code scanning.
+
+Autobuild still reports one "Detected build command failed" diagnostic. It
+builds with `xcodebuild -target`, which does not produce SwiftPM resource
+bundles, so the last step — copying `KeyboardShortcuts_KeyboardShortcuts.bundle`
+and `NexusKit_NexusKit.bundle` — fails after every Swift file has compiled. The
+analysis itself succeeds. This predates NexusKit: `main` at v1 shows the same
+diagnostic for the KeyboardShortcuts bundle.
+
 ### Actions must be SHA-pinned
 
 The `psd401` org sets `sha_pinning_required: true` on Actions. A workflow that
@@ -94,7 +117,7 @@ startup.
 
 | Ecosystem | What it updates | Commit prefix |
 |-----------|-----------------|---------------|
-| `swift` | the SwiftPM dependency (`KeyboardShortcuts`), via `Package.resolved` | `chore(deps)` |
+| `swift` | the remote SwiftPM dependency (`KeyboardShortcuts`), via `Package.resolved` | `chore(deps)` |
 | `github-actions` | the pinned action SHAs in `.github/workflows/` | `chore(ci)` |
 
 `target-branch` is deliberately **not** set. `main` is the default branch so it
@@ -104,6 +127,11 @@ security updates for that ecosystem, which is a real loss for no gain.
 Note that `Package.swift` pins `KeyboardShortcuts` with `exact:`, so a Dependabot
 bump has to change `Package.swift` as well as the resolved files — review those
 PRs rather than merging them blind.
+
+Dependabot does **not** see NexusKit. It is a vendored local package
+(`.package(path: "Vendor/NexusKit")`), not a resolved remote one, so refreshing
+it is a manual step — the procedure and the recorded source commit are in
+[`Vendor/NexusKit/VENDORED.md`](../../Vendor/NexusKit/VENDORED.md).
 
 ## The verify gate
 

@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import LifeOSMenubarCore
+import NexusKit
 
 @MainActor
 final class StatusItemController {
@@ -64,6 +65,15 @@ final class StatusItemController {
   }
 }
 
+/// Draws the menu bar image.
+///
+/// This renderer is deliberately outside the Nexus palette. The image is a
+/// **template** image: macOS masks it and tints the result to match the menu
+/// bar, so the black here is the mask, not a color choice — a Nexus `ink` or
+/// `action` fill would be thrown away and would break in a light menu bar. For
+/// the same reason the badge geometry and its 9pt digits are menu-bar metrics
+/// rather than Nexus tokens, which have no menu-bar scale; the icon box is the
+/// one dimension that maps cleanly onto a token (`icon-sm`).
 private enum StatusItemBadgeRenderer {
   static func image(count: Int) -> NSImage? {
     guard count > 0 else {
@@ -82,7 +92,7 @@ private enum StatusItemBadgeRenderer {
       .foregroundColor: NSColor.black,
     ]
     let textSize = countText.size(withAttributes: attributes)
-    let iconSize: CGFloat = 16
+    let iconSize = NexusSize.iconSm
     let bubbleHeight: CGFloat = 14
     let bubbleWidth = max(bubbleHeight, ceil(textSize.width) + 7)
     let spacing: CGFloat = 3

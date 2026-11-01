@@ -18,7 +18,13 @@ concurrency:
 jobs:
   validate:
     name: Swift validation
-    runs-on: macos-15
+    # macOS 26 floor (decision 0004). `macos-15` ships Xcode 16 and cannot build
+    # for macOS 26 at all. `xcode-27` is macOS 27 with Xcode 27, the toolchain the
+    # app is developed against. `macos-26` (Xcode 26.6) failed on vendored
+    # NexusKit until psd-dev-standards#194 fixed it upstream; CodeQL's autobuild
+    # now builds the app with Xcode 26.6 on every PR. `xcode-27` is a preview
+    # label: move to the stable macOS 27 label once one exists.
+    runs-on: xcode-27
     timeout-minutes: 20
 
     steps:
