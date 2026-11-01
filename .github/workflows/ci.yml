@@ -18,7 +18,9 @@ concurrency:
 jobs:
   validate:
     name: Swift validation
-    runs-on: macos-15
+    # macOS 26 floor (decision 0004): macos-15 ships Xcode 16 and cannot build
+    # for macOS 26, which NexusKit requires.
+    runs-on: macos-26
     timeout-minutes: 20
 
     steps:

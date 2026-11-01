@@ -58,6 +58,7 @@
 		B00000000000000000000401 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
 		B00000000000000000000402 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
 		B00000000000000000000403 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = K00000000000000000000001 /* KeyboardShortcuts */; };
+		B00000000000000000000404 /* NexusKit in Frameworks */ = {isa = PBXBuildFile; productRef = K00000000000000000000002 /* NexusKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -128,6 +129,7 @@
 		F00000000000000000000217 /* ProjectFieldsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFieldsTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000301 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F00000000000000000000401 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
+		F00000000000000000000403 /* VENDORED.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = NexusKit/VENDORED.md; sourceTree = "<group>"; };
 		F00000000000000000000402 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		P00000000000000000000001 /* LifeOSMenubar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LifeOSMenubar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		P00000000000000000000002 /* libLifeOSMenubarCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLifeOSMenubarCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -141,6 +143,7 @@
 			files = (
 				B00000000000000000000401 /* libLifeOSMenubarCore.a in Frameworks */,
 				B00000000000000000000403 /* KeyboardShortcuts in Frameworks */,
+				B00000000000000000000404 /* NexusKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -168,6 +171,7 @@
 				G00000000000000000000002 /* Sources */,
 				G00000000000000000000005 /* Tests */,
 				G00000000000000000000007 /* Resources */,
+				G00000000000000000000009 /* Vendor */,
 				F00000000000000000000401 /* Package.swift */,
 				F00000000000000000000402 /* README.md */,
 				G00000000000000000000008 /* Products */,
@@ -260,6 +264,14 @@
 			path = LifeOSMenubarCoreTests;
 			sourceTree = "<group>";
 		};
+		G00000000000000000000009 /* Vendor */ = {
+			isa = PBXGroup;
+			children = (
+				F00000000000000000000403 /* VENDORED.md */,
+			);
+			path = Vendor;
+			sourceTree = "<group>";
+		};
 		G00000000000000000000007 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -297,6 +309,7 @@
 			name = LifeOSMenubar;
 			packageProductDependencies = (
 				K00000000000000000000001 /* KeyboardShortcuts */,
+				K00000000000000000000002 /* NexusKit */,
 			);
 			productName = LifeOSMenubar;
 			productReference = P00000000000000000000001 /* LifeOSMenubar.app */;
@@ -368,6 +381,7 @@
 			productRefGroup = G00000000000000000000008 /* Products */;
 			packageReferences = (
 				Q00000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+				Q00000000000000000000002 /* XCLocalSwiftPackageReference "Vendor/NexusKit" */,
 			);
 			projectDirPath = "";
 			projectRoot = "";
@@ -474,6 +488,13 @@
 		};
 /* End PBXTargetDependency section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		Q00000000000000000000002 /* XCLocalSwiftPackageReference "Vendor/NexusKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Vendor/NexusKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		Q00000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -490,6 +511,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = Q00000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
 			productName = KeyboardShortcuts;
+		};
+		K00000000000000000000002 /* NexusKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NexusKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 
@@ -606,7 +631,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Resources/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.krishagel.LifeOSMenubar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -621,7 +646,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Resources/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.krishagel.LifeOSMenubar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -635,7 +660,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				DEFINES_MODULE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MACH_O_TYPE = staticlib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -650,7 +675,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				DEFINES_MODULE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MACH_O_TYPE = staticlib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -665,7 +690,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.krishagel.LifeOSMenubarCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -679,7 +704,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.krishagel.LifeOSMenubarCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_STRICT_CONCURRENCY = complete;
