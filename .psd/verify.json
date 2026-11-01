@@ -1,0 +1,15 @@
+{
+  "commands": {
+    "build": "xcodebuild build -project LifeOSMenubar.xcodeproj -scheme LifeOSMenubar -configuration Release -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO",
+    "lint": "swift format lint --strict --recursive Sources Tests Package.swift",
+    "test": "swift test && xcodebuild test -project LifeOSMenubar.xcodeproj -scheme LifeOSMenubar -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO"
+  },
+  "e2e_required": false,
+  "e2e_flows": [],
+  "strictness": "block",
+  "reviewers": ["claude[bot]"],
+  "commit_learnings": false,
+  "auto_worktree": true,
+  "screenshot_dir": ".verification",
+  "baseline": { "allow_preexisting_failures": false }
+}

@@ -1,0 +1,733 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B00000000000000000000001 /* GitHubTokenValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000001 /* GitHubTokenValidator.swift */; };
+		B00000000000000000000002 /* KeychainTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000002 /* KeychainTokenStore.swift */; };
+		B00000000000000000000003 /* LaunchAtLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000003 /* LaunchAtLoginController.swift */; };
+		B00000000000000000000004 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000004 /* SettingsViewModel.swift */; };
+		B00000000000000000000005 /* LifeOSIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000005 /* LifeOSIssue.swift */; };
+		B00000000000000000000006 /* GitHubIssueClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000006 /* GitHubIssueClient.swift */; };
+		B00000000000000000000007 /* IssueCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000007 /* IssueCacheStore.swift */; };
+		B00000000000000000000008 /* IssueSyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000008 /* IssueSyncEngine.swift */; };
+		B00000000000000000000009 /* TaskListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000009 /* TaskListViewModel.swift */; };
+		B00000000000000000000010 /* TaskFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000010 /* TaskFilter.swift */; };
+		B00000000000000000000011 /* TaskFilterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000011 /* TaskFilterStore.swift */; };
+		B00000000000000000000012 /* LabelRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000012 /* LabelRules.swift */; };
+		B00000000000000000000013 /* IssueDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000013 /* IssueDetail.swift */; };
+		B00000000000000000000014 /* GitHubIssueDetailClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000014 /* GitHubIssueDetailClient.swift */; };
+		B00000000000000000000015 /* GitHubIssueMutationClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000015 /* GitHubIssueMutationClient.swift */; };
+		B00000000000000000000016 /* TaskDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000016 /* TaskDetailViewModel.swift */; };
+		B00000000000000000000017 /* QuickCaptureViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000017 /* QuickCaptureViewModel.swift */; };
+		B00000000000000000000018 /* ProjectFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000018 /* ProjectFields.swift */; };
+		B00000000000000000000019 /* GitHubProjectFieldClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000019 /* GitHubProjectFieldClient.swift */; };
+		B00000000000000000000020 /* TodayBadgePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000020 /* TodayBadgePreferenceStore.swift */; };
+		B00000000000000000000101 /* LifeOSMenubarMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000101 /* LifeOSMenubarMain.swift */; };
+		B00000000000000000000102 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000102 /* AppDelegate.swift */; };
+		B00000000000000000000103 /* PanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000103 /* PanelController.swift */; };
+		B00000000000000000000104 /* PanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000104 /* PanelView.swift */; };
+		B00000000000000000000105 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000105 /* SettingsView.swift */; };
+		B00000000000000000000106 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000106 /* SettingsWindowController.swift */; };
+		B00000000000000000000107 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000107 /* StatusItemController.swift */; };
+		B00000000000000000000108 /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000108 /* TaskDetailView.swift */; };
+		B00000000000000000000109 /* KeyboardShortcutsNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000109 /* KeyboardShortcutsNames.swift */; };
+		B00000000000000000000110 /* QuickCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000110 /* QuickCaptureView.swift */; };
+		B00000000000000000000111 /* QuickCaptureWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000111 /* QuickCaptureWindowController.swift */; };
+		B00000000000000000000201 /* GitHubTokenValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000201 /* GitHubTokenValidatorTests.swift */; };
+		B00000000000000000000202 /* SettingsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000202 /* SettingsViewModelTests.swift */; };
+		B00000000000000000000203 /* GitHubIssueClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000203 /* GitHubIssueClientTests.swift */; };
+		B00000000000000000000204 /* IssueCacheStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000204 /* IssueCacheStoreTests.swift */; };
+		B00000000000000000000205 /* IssueSyncEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000205 /* IssueSyncEngineTests.swift */; };
+		B00000000000000000000206 /* TaskListPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000206 /* TaskListPresentationTests.swift */; };
+		B00000000000000000000207 /* TaskListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000207 /* TaskListViewModelTests.swift */; };
+		B00000000000000000000208 /* TaskFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000208 /* TaskFilterTests.swift */; };
+		B00000000000000000000209 /* TaskFilterStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000209 /* TaskFilterStoreTests.swift */; };
+		B00000000000000000000210 /* LabelRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000210 /* LabelRulesTests.swift */; };
+		B00000000000000000000211 /* GitHubIssueDetailClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000211 /* GitHubIssueDetailClientTests.swift */; };
+		B00000000000000000000212 /* GitHubIssueMutationClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000212 /* GitHubIssueMutationClientTests.swift */; };
+		B00000000000000000000213 /* TaskDetailViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000213 /* TaskDetailViewModelTests.swift */; };
+		B00000000000000000000214 /* MarkdownLineParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000214 /* MarkdownLineParserTests.swift */; };
+		B00000000000000000000215 /* QuickCaptureViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000215 /* QuickCaptureViewModelTests.swift */; };
+		B00000000000000000000216 /* GitHubProjectFieldClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000216 /* GitHubProjectFieldClientTests.swift */; };
+		B00000000000000000000217 /* ProjectFieldsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000217 /* ProjectFieldsTests.swift */; };
+		B00000000000000000000401 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
+		B00000000000000000000402 /* libLifeOSMenubarCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = P00000000000000000000002 /* libLifeOSMenubarCore.a */; };
+		B00000000000000000000403 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = K00000000000000000000001 /* KeyboardShortcuts */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C00000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000000003;
+			remoteInfo = LifeOSMenubarCore;
+		};
+		C00000000000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000000003;
+			remoteInfo = LifeOSMenubarCore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		F00000000000000000000001 /* GitHubTokenValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubTokenValidator.swift; sourceTree = "<group>"; };
+		F00000000000000000000002 /* KeychainTokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainTokenStore.swift; sourceTree = "<group>"; };
+		F00000000000000000000003 /* LaunchAtLoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginController.swift; sourceTree = "<group>"; };
+		F00000000000000000000004 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		F00000000000000000000005 /* LifeOSIssue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeOSIssue.swift; sourceTree = "<group>"; };
+		F00000000000000000000006 /* GitHubIssueClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueClient.swift; sourceTree = "<group>"; };
+		F00000000000000000000007 /* IssueCacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueCacheStore.swift; sourceTree = "<group>"; };
+		F00000000000000000000008 /* IssueSyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueSyncEngine.swift; sourceTree = "<group>"; };
+		F00000000000000000000009 /* TaskListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListViewModel.swift; sourceTree = "<group>"; };
+		F00000000000000000000010 /* TaskFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFilter.swift; sourceTree = "<group>"; };
+		F00000000000000000000011 /* TaskFilterStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFilterStore.swift; sourceTree = "<group>"; };
+		F00000000000000000000012 /* LabelRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelRules.swift; sourceTree = "<group>"; };
+		F00000000000000000000013 /* IssueDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueDetail.swift; sourceTree = "<group>"; };
+		F00000000000000000000014 /* GitHubIssueDetailClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueDetailClient.swift; sourceTree = "<group>"; };
+		F00000000000000000000015 /* GitHubIssueMutationClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueMutationClient.swift; sourceTree = "<group>"; };
+		F00000000000000000000016 /* TaskDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailViewModel.swift; sourceTree = "<group>"; };
+		F00000000000000000000017 /* QuickCaptureViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureViewModel.swift; sourceTree = "<group>"; };
+		F00000000000000000000018 /* ProjectFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFields.swift; sourceTree = "<group>"; };
+		F00000000000000000000019 /* GitHubProjectFieldClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubProjectFieldClient.swift; sourceTree = "<group>"; };
+		F00000000000000000000020 /* TodayBadgePreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayBadgePreferenceStore.swift; sourceTree = "<group>"; };
+		F00000000000000000000101 /* LifeOSMenubarMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeOSMenubarMain.swift; sourceTree = "<group>"; };
+		F00000000000000000000102 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		F00000000000000000000103 /* PanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelController.swift; sourceTree = "<group>"; };
+		F00000000000000000000104 /* PanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelView.swift; sourceTree = "<group>"; };
+		F00000000000000000000105 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F00000000000000000000106 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		F00000000000000000000107 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
+		F00000000000000000000108 /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
+		F00000000000000000000109 /* KeyboardShortcutsNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsNames.swift; sourceTree = "<group>"; };
+		F00000000000000000000110 /* QuickCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureView.swift; sourceTree = "<group>"; };
+		F00000000000000000000111 /* QuickCaptureWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureWindowController.swift; sourceTree = "<group>"; };
+		F00000000000000000000201 /* GitHubTokenValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubTokenValidatorTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000202 /* SettingsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModelTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000203 /* GitHubIssueClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueClientTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000204 /* IssueCacheStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueCacheStoreTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000205 /* IssueSyncEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueSyncEngineTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000206 /* TaskListPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListPresentationTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000207 /* TaskListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListViewModelTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000208 /* TaskFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFilterTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000209 /* TaskFilterStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFilterStoreTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000210 /* LabelRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelRulesTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000211 /* GitHubIssueDetailClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueDetailClientTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000212 /* GitHubIssueMutationClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueMutationClientTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000213 /* TaskDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailViewModelTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000214 /* MarkdownLineParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownLineParserTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000215 /* QuickCaptureViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureViewModelTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000216 /* GitHubProjectFieldClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubProjectFieldClientTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000217 /* ProjectFieldsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFieldsTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000301 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F00000000000000000000401 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
+		F00000000000000000000402 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		P00000000000000000000001 /* LifeOSMenubar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LifeOSMenubar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		P00000000000000000000002 /* libLifeOSMenubarCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLifeOSMenubarCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		P00000000000000000000003 /* LifeOSMenubarCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LifeOSMenubarCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E00000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B00000000000000000000401 /* libLifeOSMenubarCore.a in Frameworks */,
+				B00000000000000000000403 /* KeyboardShortcuts in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E00000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E00000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B00000000000000000000402 /* libLifeOSMenubarCore.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		G00000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				G00000000000000000000002 /* Sources */,
+				G00000000000000000000005 /* Tests */,
+				G00000000000000000000007 /* Resources */,
+				F00000000000000000000401 /* Package.swift */,
+				F00000000000000000000402 /* README.md */,
+				G00000000000000000000008 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		G00000000000000000000002 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				G00000000000000000000003 /* LifeOSMenubarCore */,
+				G00000000000000000000004 /* LifeOSMenubarApp */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		G00000000000000000000003 /* LifeOSMenubarCore */ = {
+			isa = PBXGroup;
+			children = (
+				F00000000000000000000001 /* GitHubTokenValidator.swift */,
+				F00000000000000000000002 /* KeychainTokenStore.swift */,
+				F00000000000000000000003 /* LaunchAtLoginController.swift */,
+				F00000000000000000000004 /* SettingsViewModel.swift */,
+				F00000000000000000000005 /* LifeOSIssue.swift */,
+				F00000000000000000000006 /* GitHubIssueClient.swift */,
+				F00000000000000000000007 /* IssueCacheStore.swift */,
+				F00000000000000000000008 /* IssueSyncEngine.swift */,
+				F00000000000000000000009 /* TaskListViewModel.swift */,
+				F00000000000000000000010 /* TaskFilter.swift */,
+				F00000000000000000000011 /* TaskFilterStore.swift */,
+				F00000000000000000000012 /* LabelRules.swift */,
+				F00000000000000000000013 /* IssueDetail.swift */,
+				F00000000000000000000014 /* GitHubIssueDetailClient.swift */,
+				F00000000000000000000015 /* GitHubIssueMutationClient.swift */,
+				F00000000000000000000016 /* TaskDetailViewModel.swift */,
+				F00000000000000000000017 /* QuickCaptureViewModel.swift */,
+				F00000000000000000000018 /* ProjectFields.swift */,
+				F00000000000000000000019 /* GitHubProjectFieldClient.swift */,
+				F00000000000000000000020 /* TodayBadgePreferenceStore.swift */,
+			);
+			path = LifeOSMenubarCore;
+			sourceTree = "<group>";
+		};
+		G00000000000000000000004 /* LifeOSMenubarApp */ = {
+			isa = PBXGroup;
+			children = (
+				F00000000000000000000101 /* LifeOSMenubarMain.swift */,
+				F00000000000000000000102 /* AppDelegate.swift */,
+				F00000000000000000000103 /* PanelController.swift */,
+				F00000000000000000000104 /* PanelView.swift */,
+				F00000000000000000000105 /* SettingsView.swift */,
+				F00000000000000000000106 /* SettingsWindowController.swift */,
+				F00000000000000000000107 /* StatusItemController.swift */,
+				F00000000000000000000108 /* TaskDetailView.swift */,
+				F00000000000000000000109 /* KeyboardShortcutsNames.swift */,
+				F00000000000000000000110 /* QuickCaptureView.swift */,
+				F00000000000000000000111 /* QuickCaptureWindowController.swift */,
+			);
+			path = LifeOSMenubarApp;
+			sourceTree = "<group>";
+		};
+		G00000000000000000000005 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				G00000000000000000000006 /* LifeOSMenubarCoreTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		G00000000000000000000006 /* LifeOSMenubarCoreTests */ = {
+			isa = PBXGroup;
+			children = (
+				F00000000000000000000201 /* GitHubTokenValidatorTests.swift */,
+				F00000000000000000000202 /* SettingsViewModelTests.swift */,
+				F00000000000000000000203 /* GitHubIssueClientTests.swift */,
+				F00000000000000000000204 /* IssueCacheStoreTests.swift */,
+				F00000000000000000000205 /* IssueSyncEngineTests.swift */,
+				F00000000000000000000206 /* TaskListPresentationTests.swift */,
+				F00000000000000000000207 /* TaskListViewModelTests.swift */,
+				F00000000000000000000208 /* TaskFilterTests.swift */,
+				F00000000000000000000209 /* TaskFilterStoreTests.swift */,
+				F00000000000000000000210 /* LabelRulesTests.swift */,
+				F00000000000000000000211 /* GitHubIssueDetailClientTests.swift */,
+				F00000000000000000000212 /* GitHubIssueMutationClientTests.swift */,
+				F00000000000000000000213 /* TaskDetailViewModelTests.swift */,
+				F00000000000000000000214 /* MarkdownLineParserTests.swift */,
+				F00000000000000000000215 /* QuickCaptureViewModelTests.swift */,
+				F00000000000000000000216 /* GitHubProjectFieldClientTests.swift */,
+				F00000000000000000000217 /* ProjectFieldsTests.swift */,
+			);
+			path = LifeOSMenubarCoreTests;
+			sourceTree = "<group>";
+		};
+		G00000000000000000000007 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				F00000000000000000000301 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		G00000000000000000000008 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				P00000000000000000000001 /* LifeOSMenubar.app */,
+				P00000000000000000000002 /* libLifeOSMenubarCore.a */,
+				P00000000000000000000003 /* LifeOSMenubarCoreTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A00000000000000000000002 /* LifeOSMenubar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = L00000000000000000000002 /* Build configuration list for PBXNativeTarget "LifeOSMenubar" */;
+			buildPhases = (
+				S00000000000000000000001 /* Sources */,
+				E00000000000000000000001 /* Frameworks */,
+				R00000000000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D00000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = LifeOSMenubar;
+			packageProductDependencies = (
+				K00000000000000000000001 /* KeyboardShortcuts */,
+			);
+			productName = LifeOSMenubar;
+			productReference = P00000000000000000000001 /* LifeOSMenubar.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A00000000000000000000003 /* LifeOSMenubarCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = L00000000000000000000003 /* Build configuration list for PBXNativeTarget "LifeOSMenubarCore" */;
+			buildPhases = (
+				S00000000000000000000002 /* Sources */,
+				E00000000000000000000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LifeOSMenubarCore;
+			productName = LifeOSMenubarCore;
+			productReference = P00000000000000000000002 /* libLifeOSMenubarCore.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		A00000000000000000000004 /* LifeOSMenubarCoreTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = L00000000000000000000004 /* Build configuration list for PBXNativeTarget "LifeOSMenubarCoreTests" */;
+			buildPhases = (
+				S00000000000000000000003 /* Sources */,
+				E00000000000000000000003 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D00000000000000000000002 /* PBXTargetDependency */,
+			);
+			name = LifeOSMenubarCoreTests;
+			productName = LifeOSMenubarCoreTests;
+			productReference = P00000000000000000000003 /* LifeOSMenubarCoreTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A00000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					A00000000000000000000002 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					A00000000000000000000003 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					A00000000000000000000004 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+				};
+			};
+			buildConfigurationList = L00000000000000000000001 /* Build configuration list for PBXProject "LifeOSMenubar" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = G00000000000000000000001;
+			productRefGroup = G00000000000000000000008 /* Products */;
+			packageReferences = (
+				Q00000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+			);
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A00000000000000000000002 /* LifeOSMenubar */,
+				A00000000000000000000003 /* LifeOSMenubarCore */,
+				A00000000000000000000004 /* LifeOSMenubarCoreTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		R00000000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		S00000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B00000000000000000000101 /* LifeOSMenubarMain.swift in Sources */,
+				B00000000000000000000102 /* AppDelegate.swift in Sources */,
+				B00000000000000000000103 /* PanelController.swift in Sources */,
+				B00000000000000000000104 /* PanelView.swift in Sources */,
+				B00000000000000000000105 /* SettingsView.swift in Sources */,
+				B00000000000000000000106 /* SettingsWindowController.swift in Sources */,
+				B00000000000000000000107 /* StatusItemController.swift in Sources */,
+				B00000000000000000000108 /* TaskDetailView.swift in Sources */,
+				B00000000000000000000109 /* KeyboardShortcutsNames.swift in Sources */,
+				B00000000000000000000110 /* QuickCaptureView.swift in Sources */,
+				B00000000000000000000111 /* QuickCaptureWindowController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		S00000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B00000000000000000000001 /* GitHubTokenValidator.swift in Sources */,
+				B00000000000000000000002 /* KeychainTokenStore.swift in Sources */,
+				B00000000000000000000003 /* LaunchAtLoginController.swift in Sources */,
+				B00000000000000000000004 /* SettingsViewModel.swift in Sources */,
+				B00000000000000000000005 /* LifeOSIssue.swift in Sources */,
+				B00000000000000000000006 /* GitHubIssueClient.swift in Sources */,
+				B00000000000000000000007 /* IssueCacheStore.swift in Sources */,
+				B00000000000000000000008 /* IssueSyncEngine.swift in Sources */,
+				B00000000000000000000009 /* TaskListViewModel.swift in Sources */,
+				B00000000000000000000010 /* TaskFilter.swift in Sources */,
+				B00000000000000000000011 /* TaskFilterStore.swift in Sources */,
+				B00000000000000000000012 /* LabelRules.swift in Sources */,
+				B00000000000000000000013 /* IssueDetail.swift in Sources */,
+				B00000000000000000000014 /* GitHubIssueDetailClient.swift in Sources */,
+				B00000000000000000000015 /* GitHubIssueMutationClient.swift in Sources */,
+				B00000000000000000000016 /* TaskDetailViewModel.swift in Sources */,
+				B00000000000000000000017 /* QuickCaptureViewModel.swift in Sources */,
+				B00000000000000000000018 /* ProjectFields.swift in Sources */,
+				B00000000000000000000019 /* GitHubProjectFieldClient.swift in Sources */,
+				B00000000000000000000020 /* TodayBadgePreferenceStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		S00000000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B00000000000000000000201 /* GitHubTokenValidatorTests.swift in Sources */,
+				B00000000000000000000202 /* SettingsViewModelTests.swift in Sources */,
+				B00000000000000000000203 /* GitHubIssueClientTests.swift in Sources */,
+				B00000000000000000000204 /* IssueCacheStoreTests.swift in Sources */,
+				B00000000000000000000205 /* IssueSyncEngineTests.swift in Sources */,
+				B00000000000000000000206 /* TaskListPresentationTests.swift in Sources */,
+				B00000000000000000000207 /* TaskListViewModelTests.swift in Sources */,
+				B00000000000000000000208 /* TaskFilterTests.swift in Sources */,
+				B00000000000000000000209 /* TaskFilterStoreTests.swift in Sources */,
+				B00000000000000000000210 /* LabelRulesTests.swift in Sources */,
+				B00000000000000000000211 /* GitHubIssueDetailClientTests.swift in Sources */,
+				B00000000000000000000212 /* GitHubIssueMutationClientTests.swift in Sources */,
+				B00000000000000000000213 /* TaskDetailViewModelTests.swift in Sources */,
+				B00000000000000000000214 /* MarkdownLineParserTests.swift in Sources */,
+				B00000000000000000000215 /* QuickCaptureViewModelTests.swift in Sources */,
+				B00000000000000000000216 /* GitHubProjectFieldClientTests.swift in Sources */,
+				B00000000000000000000217 /* ProjectFieldsTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D00000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000000003 /* LifeOSMenubarCore */;
+			targetProxy = C00000000000000000000001 /* PBXContainerItemProxy */;
+		};
+		D00000000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000000003 /* LifeOSMenubarCore */;
+			targetProxy = C00000000000000000000002 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		Q00000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
+			requirement = {
+				kind = exactVersion;
+				version = 2.3.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		K00000000000000000000001 /* KeyboardShortcuts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = Q00000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
+			productName = KeyboardShortcuts;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+/* Begin XCBuildConfiguration section */
+		X00000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		X00000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		X00000000000000000000101 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.krishagel.LifeOSMenubar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		X00000000000000000000102 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.krishagel.LifeOSMenubar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		X00000000000000000000201 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				DEFINES_MODULE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACH_O_TYPE = staticlib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		X00000000000000000000202 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				DEFINES_MODULE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACH_O_TYPE = staticlib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		X00000000000000000000301 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.krishagel.LifeOSMenubarCoreTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "";
+			};
+			name = Debug;
+		};
+		X00000000000000000000302 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.krishagel.LifeOSMenubarCoreTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		L00000000000000000000001 /* Build configuration list for PBXProject "LifeOSMenubar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				X00000000000000000000001 /* Debug */,
+				X00000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		L00000000000000000000002 /* Build configuration list for PBXNativeTarget "LifeOSMenubar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				X00000000000000000000101 /* Debug */,
+				X00000000000000000000102 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		L00000000000000000000003 /* Build configuration list for PBXNativeTarget "LifeOSMenubarCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				X00000000000000000000201 /* Debug */,
+				X00000000000000000000202 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		L00000000000000000000004 /* Build configuration list for PBXNativeTarget "LifeOSMenubarCoreTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				X00000000000000000000301 /* Debug */,
+				X00000000000000000000302 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A00000000000000000000001 /* Project object */;
+}

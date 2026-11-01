@@ -1,0 +1,25 @@
+version: 2
+
+# `target-branch` is deliberately omitted: `main` is the default branch, so
+# setting it would be redundant, and setting it also disables Dependabot
+# security updates for that ecosystem.
+updates:
+  - package-ecosystem: "swift"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "dependencies"
