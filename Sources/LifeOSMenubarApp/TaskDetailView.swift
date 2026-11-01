@@ -133,7 +133,7 @@ struct TaskDetailView: View {
       }
       .padding(.horizontal, NexusSpace.s3)
       .padding(.vertical, NexusSpace.s2)
-      .nexusGlass(in: RoundedRectangle(cornerRadius: NexusRadius.md))
+      .nexusChrome(in: RoundedRectangle(cornerRadius: NexusRadius.md))
 
       Text("#\(viewModel.issue.number)")
         .font(NexusFont.code)
@@ -440,10 +440,27 @@ private struct FlowLabelView: View {
   let labels: [GitHubLabel]
 
   var body: some View {
-    NexusFlowLayout(spacing: NexusSpace.s1) {
-      ForEach(labels, id: \.name) { label in
-        NexusBadge(label.name, tone: label.name.nexusLabelTone)
+    // `NexusFlowLayout` wraps between badges but measures each one at its ideal
+    // width (`sizeThatFits(.unspecified)`), so a single label longer than the
+    // panel is placed at that width and clipped rather than wrapped. A GitHub
+    // label has no length limit this app controls, so the flow layout is used
+    // only while every badge fits; past that, the vertical fallback gives each
+    // badge the full width and lets its text wrap, which is what this view did
+    // before the Nexus pass.
+    ViewThatFits(in: .horizontal) {
+      NexusFlowLayout(spacing: NexusSpace.s1) {
+        badges
       }
+      VStack(alignment: .leading, spacing: NexusSpace.s1) {
+        badges
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var badges: some View {
+    ForEach(labels, id: \.name) { label in
+      NexusBadge(label.name, tone: label.name.nexusLabelTone)
     }
   }
 }

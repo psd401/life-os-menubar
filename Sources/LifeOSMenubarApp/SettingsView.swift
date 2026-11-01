@@ -141,10 +141,15 @@ struct SettingsView: View {
       ProgressView()
         .controlSize(.small)
     case .valid(let login):
-      NexusBadge("@\(login)", tone: .success)
+      // The badge has to say "Valid", not just turn green around a username:
+      // the Nexus rule is that a status color is always paired with a word, and
+      // without one a VoiceOver user hears the login and no status at all.
+      NexusBadge("Valid · @\(login)", tone: .success)
+        .accessibilityLabel("Token is valid for @\(login)")
     case .invalid(let message):
-      NexusBadge(message, tone: .danger)
+      NexusBadge("Not valid · \(message)", tone: .danger)
         .lineLimit(2)
+        .accessibilityLabel("Token is not valid: \(message)")
     }
   }
 }

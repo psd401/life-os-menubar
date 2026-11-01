@@ -38,6 +38,7 @@
 		B00000000000000000000109 /* KeyboardShortcutsNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000109 /* KeyboardShortcutsNames.swift */; };
 		B00000000000000000000110 /* QuickCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000110 /* QuickCaptureView.swift */; };
 		B00000000000000000000111 /* QuickCaptureWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000111 /* QuickCaptureWindowController.swift */; };
+		B00000000000000000000112 /* NexusChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000112 /* NexusChrome.swift */; };
 		B00000000000000000000201 /* GitHubTokenValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000201 /* GitHubTokenValidatorTests.swift */; };
 		B00000000000000000000202 /* SettingsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000202 /* SettingsViewModelTests.swift */; };
 		B00000000000000000000203 /* GitHubIssueClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000203 /* GitHubIssueClientTests.swift */; };
@@ -110,6 +111,7 @@
 		F00000000000000000000109 /* KeyboardShortcutsNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsNames.swift; sourceTree = "<group>"; };
 		F00000000000000000000110 /* QuickCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureView.swift; sourceTree = "<group>"; };
 		F00000000000000000000111 /* QuickCaptureWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureWindowController.swift; sourceTree = "<group>"; };
+		F00000000000000000000112 /* NexusChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NexusChrome.swift; sourceTree = "<group>"; };
 		F00000000000000000000201 /* GitHubTokenValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubTokenValidatorTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000202 /* SettingsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModelTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000203 /* GitHubIssueClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubIssueClientTests.swift; sourceTree = "<group>"; };
@@ -228,6 +230,7 @@
 				F00000000000000000000109 /* KeyboardShortcutsNames.swift */,
 				F00000000000000000000110 /* QuickCaptureView.swift */,
 				F00000000000000000000111 /* QuickCaptureWindowController.swift */,
+				F00000000000000000000112 /* NexusChrome.swift */,
 			);
 			path = LifeOSMenubarApp;
 			sourceTree = "<group>";
@@ -419,6 +422,7 @@
 				B00000000000000000000109 /* KeyboardShortcutsNames.swift in Sources */,
 				B00000000000000000000110 /* QuickCaptureView.swift in Sources */,
 				B00000000000000000000111 /* QuickCaptureWindowController.swift in Sources */,
+				B00000000000000000000112 /* NexusChrome.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

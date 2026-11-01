@@ -42,7 +42,7 @@ struct QuickCaptureView: View {
       }
       .padding(.horizontal, NexusSpace.s4)
       .padding(.vertical, NexusSpace.s3)
-      .nexusGlass(in: RoundedRectangle(cornerRadius: NexusRadius.sheet))
+      .nexusChrome(in: RoundedRectangle(cornerRadius: NexusRadius.sheet))
 
       VStack(alignment: .leading, spacing: NexusSpace.s2) {
         Text("Notes (optional)")

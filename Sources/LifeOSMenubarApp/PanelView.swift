@@ -142,7 +142,7 @@ struct PanelView: View {
     }
     .padding(.horizontal, NexusSpace.s3)
     .padding(.vertical, NexusSpace.s2)
-    .nexusGlass(in: RoundedRectangle(cornerRadius: NexusRadius.md))
+    .nexusChrome(in: RoundedRectangle(cornerRadius: NexusRadius.md))
   }
 
   private var footer: some View {
@@ -185,7 +185,7 @@ struct PanelView: View {
     }
     .padding(.horizontal, NexusSpace.s3)
     .padding(.vertical, NexusSpace.s2)
-    .nexusGlass(in: RoundedRectangle(cornerRadius: NexusRadius.md))
+    .nexusChrome(in: RoundedRectangle(cornerRadius: NexusRadius.md))
   }
 }
 
