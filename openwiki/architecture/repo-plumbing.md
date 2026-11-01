@@ -26,12 +26,12 @@ timeout, triggered on `pull_request` and `push` to `main`. Four steps, in order:
 `CODE_SIGNING_ALLOWED=NO` is what lets an unsigned runner build and test the app;
 signing and notarization are a separate pipeline and out of scope here.
 
-The runner label is load-bearing and not the obvious one. `macos-26` can target
-the macOS 26 floor but its Xcode 26 type checker fails on a vendored NexusKit
-preview file, which cannot be edited. `xcode-27` (macOS 27 / Xcode 27) matches
-the development toolchain and compiles it — see
-[decision 0004](../decisions/0004-macos-26-floor.md). It is a preview image
-today; move to the stable macOS 27 label when there is one.
+The runner is `xcode-27` (macOS 27 / Xcode 27), the toolchain the app is
+developed against — see [decision 0004](../decisions/0004-macos-26-floor.md).
+`macos-26` (Xcode 26.6) failed on a vendored NexusKit preview file until NexusKit
+`2cf8879` fixed it upstream; Xcode 26.6 now builds the app, and CodeQL's autobuild
+(below) proves that on every PR. `xcode-27` is a preview image today; move to
+the stable macOS 27 label when there is one.
 
 ### AI review
 
@@ -74,12 +74,21 @@ autobuilds Swift on GitHub's standard macOS runner with that image's default
 Xcode (`macos-26-arm64`, Xcode 26.6, as of 2026-11-01), so everything the app
 compiles, vendored code included, must build with that toolchain.
 
-NexusKit at `4affbd15` does not: the `#Preview` at
-`Vendor/NexusKit/Sources/NexusKit/NexusGallery2.swift:223` fails to type-check
-on Xcode 26.6, so `Analyze (swift)` fails. Moving the scan to `xcode-27` is no
-way out either: Xcode 27 ships Swift 6.4, and CodeQL supports Swift up to 6.3.
-The fix is upstream — simplify that expression in the Nexus artifact, flow it
-to `psd-dev-standards`, and re-vendor.
+NexusKit at `4affbd15` did not: the `#Preview` at
+`Vendor/NexusKit/Sources/NexusKit/NexusGallery2.swift:223` failed to type-check
+on Xcode 26.6, and `Analyze (swift)` failed. Moving the scan to `xcode-27` was no
+way out: Xcode 27 ships Swift 6.4, and CodeQL supports Swift up to 6.3. So the
+fix went upstream — the Nexus artifact, then
+[psd-dev-standards#194](https://github.com/psd401/psd-dev-standards/pull/194),
+re-vendored here at `2cf8879`. The standing lesson: a NexusKit change that
+compiles only on Xcode 27 breaks this repo's code scanning.
+
+Autobuild still reports one "Detected build command failed" diagnostic. It
+builds with `xcodebuild -target`, which does not produce SwiftPM resource
+bundles, so the last step — copying `KeyboardShortcuts_KeyboardShortcuts.bundle`
+and `NexusKit_NexusKit.bundle` — fails after every Swift file has compiled. The
+analysis itself succeeds. This predates NexusKit: `main` at v1 shows the same
+diagnostic for the KeyboardShortcuts bundle.
 
 ### Actions must be SHA-pinned
 

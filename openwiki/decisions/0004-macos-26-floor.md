@@ -88,3 +88,15 @@ is obvious from the deployment target.
 
 The README's requirements block — the single copy of the floor — now reads
 macOS 26 / Xcode 26 / Swift 6.2 and links here for the reason.
+
+### Update — 2026-11-01: fixed upstream
+
+"Break up the expression" was not available *here*, but it was upstream.
+CodeQL default setup autobuilds Swift on `macos-26-arm64` with Xcode 26.6, and
+the org's enforced security configuration rules out any other CodeQL setup, so
+the same type-check failure also failed `Analyze (swift)` on #26. The closure
+was split in the Nexus design-system artifact, exported to
+[psd-dev-standards#194](https://github.com/psd401/psd-dev-standards/pull/194),
+and re-vendored at `2cf8879`. Xcode 26.6 now builds the app: `Analyze (swift)`
+passed on #26 (run 41325447768). CI stays on `xcode-27`; the Xcode 26 minimum
+in the README is now exercised by CodeQL's autobuild on every PR.
