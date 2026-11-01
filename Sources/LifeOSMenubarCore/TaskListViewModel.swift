@@ -148,6 +148,31 @@ public final class TaskListViewModel: ObservableObject {
     }
   }
 
+  /// Drops every synced task, in memory and on disk.
+  ///
+  /// Called on sign-out. `refresh(token:)` returns early on an empty token
+  /// without touching `issues`, so without this the previous account's tasks
+  /// would keep showing in the panel and counting toward the Today badge —
+  /// and would still be there for whoever signs in next. Resetting the cache to
+  /// `.empty` also clears the sync watermarks, so the next sign-in starts with
+  /// a full fetch rather than a delta against someone else's data.
+  ///
+  /// It also abandons any refresh still in flight, through the same generation
+  /// a repository change bumps: a refresh started under the signed-out account
+  /// would otherwise finish afterwards and write that account's tasks back. A
+  /// refresh queued behind it carries the old token, so it is dropped too.
+  public func clearCachedTasks() {
+    repositoryGeneration += 1
+    queuedRefreshToken = nil
+    apply(.empty)
+    errorMessage = nil
+    do {
+      try cacheStore.save(.empty)
+    } catch {
+      errorMessage = "Cached tasks could not be cleared: \(error.localizedDescription)"
+    }
+  }
+
   /// Undoes the cache write a refresh for the previous repository performed
   /// after `resetForRepositoryChange()` had already cleared it.
   ///

@@ -27,6 +27,61 @@ struct TaskListViewModelTests {
   }
 
   @Test
+  func clearingCachedTasksEmptiesTheListAndTheCacheOnSignOut() async throws {
+    let cachedIssue = viewModelTestIssue(number: 11)
+    let cache = ViewModelCacheStore(
+      snapshot: IssueCacheSnapshot(
+        issues: [cachedIssue],
+        lastSyncedAt: Date(timeIntervalSince1970: 1_785_100_000),
+        lastFullSyncedAt: Date(timeIntervalSince1970: 1_785_100_000),
+        projectFieldAccess: .available
+      )
+    )
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: ViewModelFilterStore()
+    )
+    #expect(viewModel.issues == [cachedIssue])
+
+    viewModel.clearCachedTasks()
+
+    #expect(viewModel.issues.isEmpty)
+    #expect(viewModel.lastSyncedAt == nil)
+    #expect(viewModel.projectFieldAccess == .unknown)
+    #expect(viewModel.errorMessage == nil)
+    // On disk too: the next person to sign in must not find these.
+    let persisted = try #require(try cache.load())
+    #expect(persisted == .empty)
+  }
+
+  @Test
+  func anEmptyTokenAloneDoesNotDropCachedTasks() async {
+    // refresh(token:) deliberately keeps the cache on an empty token — an
+    // offline launch should still show tasks. Clearing is sign-out's job, which
+    // is why clearCachedTasks exists at all.
+    let cachedIssue = viewModelTestIssue(number: 12)
+    let cache = ViewModelCacheStore(
+      snapshot: IssueCacheSnapshot(issues: [cachedIssue], lastSyncedAt: nil)
+    )
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([])),
+        cacheStore: cache
+      ),
+      filterStore: ViewModelFilterStore()
+    )
+
+    await viewModel.refresh(token: "   ")
+
+    #expect(viewModel.issues == [cachedIssue])
+  }
+
+  @Test
   func refreshFailureKeepsCachedTasksAndShowsNonBlockingError() async {
     let cachedIssue = viewModelTestIssue(number: 8)
     let cache = ViewModelCacheStore(
@@ -376,6 +431,43 @@ struct TaskListViewModelTests {
     #expect(persisted.issues.isEmpty)
     // The watermark is the dangerous half: left set, the next refresh would be
     // a delta sync against the new repo using the old repo's sync time.
+    #expect(persisted.lastSyncedAt == nil)
+    #expect(persisted.lastFullSyncedAt == nil)
+  }
+
+  @Test
+  func aRefreshInFlightAtSignOutCannotWriteTheSignedOutAccountsTasksBack() async throws {
+    // Same race as a repository change, reached by signing out: the refresh
+    // started under the old account finishes after `clearCachedTasks()` and
+    // would put that account's tasks back on screen and on disk. A refresh
+    // queued behind it carries the old token and must not run either.
+    let cache = ViewModelCacheStore()
+    // Only the first fetch suspends, so a queued refresh that wrongly runs
+    // fails this test instead of hanging it.
+    let client = ControlledIssueFetcher(
+      laterCallsReturn: [viewModelTestIssue(number: 8)]
+    )
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(client: client, cacheStore: cache),
+      filterStore: ViewModelFilterStore()
+    )
+
+    let refresh = Task { @MainActor in
+      await viewModel.refresh(token: "old-account-token")
+    }
+    await client.waitUntilPending()
+    await viewModel.refresh(token: "old-account-token")
+
+    viewModel.clearCachedTasks()
+    await client.finish(with: [viewModelTestIssue(number: 7)])
+    await refresh.value
+
+    #expect(viewModel.issues.isEmpty)
+    #expect(viewModel.lastSyncedAt == nil)
+    #expect(await client.callCount == 1)
+    let persisted = try #require(try cache.load())
+    #expect(persisted.issues.isEmpty)
     #expect(persisted.lastSyncedAt == nil)
     #expect(persisted.lastFullSyncedAt == nil)
   }

@@ -13,6 +13,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_ notification: Notification) {
     NSApplication.shared.setActivationPolicy(.accessory)
 
+    // The task list is built first so signing out and changing the repository
+    // can clear it: the settings view model takes both as closures.
     let cacheStore = JSONIssueCacheStore()
     let taskListViewModel = TaskListViewModel(
       cacheStore: cacheStore,
@@ -26,11 +28,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // The clients read the configured repository from the same
     // `UserDefaultsTaskRepositoryStore` on every request, so changing it here
     // takes effect without rebuilding them — but the cache still holds the
-    // previous repo's tasks, which is what this callback throws away.
+    // previous repo's tasks, which is what onRepositoryChange throws away.
     let settingsViewModel = SettingsViewModel(
       tokenStore: KeychainTokenStore(),
       validator: GitHubTokenValidator(),
       launchAtLoginController: LaunchAtLoginController(),
+      deviceFlow: GitHubDeviceFlowAuthorizer(),
+      // Core holds no AppKit, so sending the user to github.com/login/device is
+      // wired up here.
+      verificationPageOpener: { url in
+        NSWorkspace.shared.open(url)
+      },
+      onSignOut: { [weak taskListViewModel] in
+        taskListViewModel?.clearCachedTasks()
+      },
       onRepositoryChange: { [weak self, weak taskListViewModel] _ in
         guard let taskListViewModel else {
           return
