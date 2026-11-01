@@ -14,7 +14,7 @@ Run from the repo root. These are the same commands CI runs
 # Lint — zero warnings required, no suppressions
 swift format lint --strict --recursive Sources Tests Package.swift
 
-# Unit tests (SwiftPM, fast — 84 tests in LifeOSMenubarCoreTests)
+# Unit tests (SwiftPM, fast — 128 tests in LifeOSMenubarCoreTests)
 swift test
 
 # Full test run through the Xcode project (the authoritative test gate)
@@ -49,6 +49,7 @@ the same sources; the Xcode project is what produces the shippable `.app`.
 
 ```
 Sources/LifeOSMenubarCore/   → library target. No AppKit/SwiftUI. All testable logic.
+scripts/                     → the task-repo label bootstrap (`gh`); `--dry-run` prints, never writes.
 Sources/LifeOSMenubarApp/    → executable target. AppKit + SwiftUI only. Depends on Core and NexusKit.
 Tests/LifeOSMenubarCoreTests/ → swift-testing suites. Core only; the App target is untested by design.
 Vendor/NexusKit/             → vendored design system. NEVER hand-edit; see Vendor/NexusKit/VENDORED.md.
@@ -59,9 +60,9 @@ Resources/Info.plist         → LSUIElement = true (accessory app, no Dock icon
 
 | Layer | Files | Role |
 |-------|-------|------|
-| Model | `LifeOSIssue`, `IssueDetail`, `ProjectFields`, `TaskFilter`, `LabelRules` | Value types + the label-contract rules (one `status:*`, one `priority:*`) |
-| Clients | `GitHubIssueClient`, `GitHubIssueDetailClient`, `GitHubIssueMutationClient`, `GitHubProjectFieldClient`, `GitHubTokenValidator` | GitHub I/O. Reads use GraphQL; mutations use REST. Each is behind a protocol so tests inject a fake |
-| Sync / storage | `IssueSyncEngine` (actor), `IssueCacheStore`, `TaskFilterStore`, `KeychainTokenStore`, `TodayBadgePreferenceStore`, `LaunchAtLoginController` | Watermarked delta sync with a ≥24h full reconcile; JSON caches in Application Support; token in the Keychain |
+| Model | `LifeOSIssue`, `IssueDetail`, `ProjectFields`, `TaskFilter`, `LabelRules`, `TaskRepository` | Value types + the label-contract rules (one `status:*`, one `priority:*`) and the required-label list |
+| Clients | `GitHubIssueClient`, `GitHubIssueDetailClient`, `GitHubIssueMutationClient`, `GitHubProjectFieldClient`, `GitHubTokenValidator`, `TaskRepositoryValidator` | GitHub I/O. Reads use GraphQL; mutations use REST. Each is behind a protocol so tests inject a fake |
+| Sync / storage | `IssueSyncEngine` (actor), `IssueCacheStore`, `TaskFilterStore`, `KeychainTokenStore`, `UserDefaultsTaskRepositoryStore`, `TodayBadgePreferenceStore`, `LaunchAtLoginController` | Watermarked delta sync with a ≥24h full reconcile; JSON caches in Application Support; token in the Keychain; repo slug in `UserDefaults` |
 | View models | `TaskListViewModel`, `TaskDetailViewModel`, `SettingsViewModel`, `QuickCaptureViewModel` | `@MainActor` observable state the views bind to |
 
 **App target** — `LifeOSMenubarMain` → `AppDelegate` is the single composition
@@ -97,6 +98,13 @@ State on disk: `~/Library/Application Support/LifeOSMenubar/{issues,filters}.jso
 - **Label contract:** any mutation normalizes to exactly one `status:*` and one
   `priority:*`; missing values are repaired to `status:inbox` / `priority:p2`.
   Local list and cache state change only after GitHub accepts the mutation.
+- **No default task repo.** Nothing in `Sources/` may hardcode an owner or repo.
+  The clients resolve the configured `TaskRepository` per request and throw
+  `TaskRepositoryConfigurationError.notConfigured` when there is none; the panel
+  shows a setup card for that state. The contract a repo must satisfy is
+  [`docs/life-os-repo-standard.md`](docs/life-os-repo-standard.md), and
+  `LabelRules.requiredLabelNames` is its single source of truth — the bootstrap
+  script in `scripts/` is held to it by a test.
 - **Project v2 fields are read-only.** The app reads Due Date / Defer Until; it
   sends no Project mutations. A token without `read:project` must degrade, not fail.
 - **Test-first for Core logic.** New behavior in Core lands with a swift-testing
@@ -129,6 +137,7 @@ Assertions are not evidence. Paste the command and its result.
 
 ## Where to read more
 
+- [`docs/life-os-repo-standard.md`](docs/life-os-repo-standard.md) — what a task repo must contain, and how to bootstrap one
 - [`openwiki/index.md`](openwiki/index.md) — wiki entry point
 - [`openwiki/architecture/`](openwiki/architecture/overview.md) — target layout, sync path, label contract
 - [`openwiki/decisions/`](openwiki/decisions/index.md) — why OAuth, Nexus, the macOS 26 floor, the configurable repo

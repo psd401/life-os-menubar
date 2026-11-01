@@ -8,7 +8,7 @@ okf_version: "0.1"
 
 | Target | Path | Contains | Tested |
 |--------|------|----------|--------|
-| `LifeOSMenubarCore` | `Sources/LifeOSMenubarCore` | Models, GitHub clients, sync engine, stores, view models. No AppKit, no SwiftUI. | Yes — `Tests/LifeOSMenubarCoreTests`, 84 swift-testing tests |
+| `LifeOSMenubarCore` | `Sources/LifeOSMenubarCore` | Models, GitHub clients, sync engine, stores, view models. No AppKit, no SwiftUI. | Yes — `Tests/LifeOSMenubarCoreTests`, 128 swift-testing tests |
 | `LifeOSMenubar` | `Sources/LifeOSMenubarApp` | AppKit/SwiftUI shell: status item, panel, detail, settings, quick capture. Depends on Core and on `KeyboardShortcuts`. | No — by design |
 
 The split exists so the whole task-management behavior is testable without a
@@ -69,7 +69,8 @@ them into:
   badge renderer is deliberately outside the Nexus palette: the image is a
   **template** image, so its black is a mask macOS tints to match the menu bar
 - `PanelController` + `PanelView` — the task panel, with `TaskDetailView` inside
-- `SettingsWindowController` + `SettingsView` — token entry, launch at login, badge toggle
+- `SettingsWindowController` + `SettingsView` — token entry, the task repository
+  field and its validation, launch at login, badge toggle
 - `QuickCaptureWindowController` + `QuickCaptureView` — the global-hotkey capture window
 
 It then starts background refresh and kicks a first refresh. There is no DI
@@ -91,15 +92,45 @@ returns `false` so closing the panel does not quit.
 All of it is reconstructible from the task repo plus a token. Nothing here is a
 system of record.
 
-## Where the hardcoding is
+## How the task repo reaches the clients
 
-`owner: String = "krishagel"` is a default parameter on each GitHub client, and
-the Keychain service string carries the same name. Making the task repo
-user-configurable is [#21](https://github.com/psd401/life-os-menubar/issues/21);
-until then these defaults are the single place to change to repoint the app.
+There is **no default repository anywhere in `Sources/`**
+([decision 0005](../decisions/0005-configurable-task-repo.md),
+[#21](https://github.com/psd401/life-os-menubar/issues/21)). All four GitHub
+clients take a `TaskRepositoryStoring` and resolve the configured repo with
+`requireRepository()` on **every request**, which has two consequences worth
+knowing:
+
+- Saving a new repo in Settings takes effect immediately — the clients are not
+  rebuilt, and nothing caches the slug.
+- An unconfigured install throws `TaskRepositoryConfigurationError.notConfigured`
+  before any network call. `PanelView` shows a setup card for that state instead
+  of an empty task list, and `SettingsView`'s "Task repository" section is where
+  it gets fixed.
+
+The slug lives in `UserDefaults` under `taskRepository`
+(`UserDefaultsTaskRepositoryStore`) — it is in every API URL the app sends, so it
+is not a secret and does not belong in the Keychain.
+
+`TaskRepositoryValidator` is what Settings calls before saving: it lists the
+repo's labels over REST, which proves access and conformance in one request, and
+a repo that fails is never written to the store. The required label set is
+`LabelRules.requiredLabelNames`, derived from `TaskStatusSection` plus
+`status:done`, the four priorities, `type:task`, and `source:manual`, and
+documented in [the task-repo standard](../../docs/life-os-repo-standard.md).
+
+Changing the repo also clears the issue cache
+(`TaskListViewModel.resetForRepositoryChange()`): the cache is keyed by issue
+number only, so the old repo's tasks would otherwise sit beside the new repo's,
+and the delta watermark would suppress the fetch that could correct it.
+
+The Keychain service string is still `com.krishagel.LifeOSMenubar`. It is
+deliberately **not** renamed: it is an identifier, not a task-repo default, and
+changing it orphans every already-stored token (decision 0005).
 
 ## See also
 
+- [The Life OS task-repo standard](../../docs/life-os-repo-standard.md)
 - [Sync and the label contract](sync-and-label-contract.md)
 - [Repo plumbing](repo-plumbing.md)
 - [Decisions](../decisions/index.md)
