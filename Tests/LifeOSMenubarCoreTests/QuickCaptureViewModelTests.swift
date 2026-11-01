@@ -74,6 +74,43 @@ struct QuickCaptureViewModelTests {
     )
   }
 
+  /// The panel quick-add composer binds only the title: it never touches `body` or
+  /// `priority`, so a title-only submit has to send an empty body and exactly the
+  /// four Agent Operating Contract defaults.
+  @Test
+  func titleOnlySubmitSendsEmptyBodyAndContractDefaults() async throws {
+    let client = QuickCaptureClientStub(result: .success(quickCaptureIssue()))
+    let viewModel = QuickCaptureViewModel(client: client)
+    viewModel.title = "  Composed task  "
+
+    let issue = await viewModel.submit(token: "token")
+    let call = try #require(await client.calls.first)
+
+    #expect(issue != nil)
+    #expect(call.title == "Composed task")
+    #expect(call.body.isEmpty)
+    #expect(
+      call.labels
+        == ["status:inbox", "type:task", "source:manual", "priority:p2"]
+    )
+    #expect(viewModel.title.isEmpty)
+    #expect(viewModel.errorMessage == nil)
+  }
+
+  /// The composer refocuses its field when the panel reopens, which rides on the
+  /// focus-request counter rather than on `onAppear`.
+  @Test
+  func requestTitleFocusAdvancesTheFocusRequestCounter() {
+    let viewModel = QuickCaptureViewModel(
+      client: QuickCaptureClientStub(result: .failure(.network))
+    )
+    let initialRequest = viewModel.titleFocusRequest
+
+    viewModel.requestTitleFocus()
+
+    #expect(viewModel.titleFocusRequest == initialRequest &+ 1)
+  }
+
   @Test
   func cancelRestoresFreshCaptureDefaults() {
     let viewModel = QuickCaptureViewModel(
