@@ -51,9 +51,15 @@ struct PanelView: View {
 
       QuickAddComposerView(
         viewModel: quickAddViewModel,
-        token: settingsViewModel.token,
+        tokenProvider: {
+          settingsViewModel.token
+        },
         onCreated: { createdIssue in
           taskListViewModel.reconcileRemoteIssue(createdIssue)
+          // A composed task carries no due date, so it can never show up in
+          // Today. Drop back to All so the new row is actually visible instead
+          // of the field just silently clearing.
+          listMode = .all
         }
       )
 
@@ -176,13 +182,20 @@ private struct QuickAddComposerView: View {
   @ObservedObject var viewModel: QuickCaptureViewModel
   @FocusState private var isTitleFocused: Bool
 
-  let token: String
+  let tokenProvider: @MainActor () -> String
   let onCreated: (LifeOSIssue) -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       HStack(spacing: 8) {
-        TextField("Add a task", text: $viewModel.title)
+        // The glyph is what tells this field apart from the visually identical
+        // search field a couple of rows down; without it the panel has two
+        // bare rounded-border fields and no cue as to which does what.
+        Image(systemName: "plus.circle")
+          .foregroundStyle(.secondary)
+          .accessibilityHidden(true)
+
+        TextField("Add a task to Inbox", text: $viewModel.title)
           .textFieldStyle(.roundedBorder)
           .focused($isTitleFocused)
           .onSubmit(submit)
@@ -198,6 +211,7 @@ private struct QuickAddComposerView: View {
         Button("Add task", action: submit)
           .disabled(!viewModel.canSubmit)
           .accessibilityLabel("Add task to Inbox")
+          .accessibilityHint("Enter a task title to enable this button")
       }
 
       if let errorMessage = viewModel.errorMessage {
@@ -223,7 +237,7 @@ private struct QuickAddComposerView: View {
       return
     }
     Task {
-      if let createdIssue = await viewModel.submit(token: token) {
+      if let createdIssue = await viewModel.submit(token: tokenProvider()) {
         onCreated(createdIssue)
       }
       // Keep the caret in the field either way: ready for the next task on
