@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import Testing
 
@@ -526,14 +527,69 @@ struct TaskListViewModelTests {
   }
 
   @Test
-  func menuBarInboxCountIgnoresThePanelsSearchAndFilters() throws {
+  func menuBarCountIgnoresThePanelsSearchAndFilters() throws {
     let viewModel = try makeMenuBarCountViewModel(projectFieldAccess: .available)
 
     viewModel.searchText = "matches nothing"
+    viewModel.toggleFilter(labelName: "status:someday", in: .status)
 
     // The badge describes the repo, not whatever the panel is narrowed to.
     #expect(viewModel.menuBarCount(for: .inbox) == 3)
     #expect(viewModel.menuBarCount(for: .today) == 2)
+  }
+
+  @Test
+  func menuBarCountPublisherUsesTheValuesARefreshPublishes() async throws {
+    // Regression for the #35 review: `@Published` emits before the property
+    // is set, so a subscriber that reads the view model back gets the old
+    // project access. A refresh that gains read:project would leave the
+    // Today badge at 0 until the next sync.
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = try #require(TimeZone(identifier: "America/Los_Angeles"))
+    let now = try #require(ISO8601DateFormatter().date(from: "2026-07-28T19:00:00Z"))
+    let task = LifeOSIssue(
+      number: 1,
+      title: "Task 1",
+      body: "",
+      labels: [GitHubLabel(name: "status:inbox", color: "ffffff")],
+      updatedAt: now
+    )
+    let cache = ViewModelCacheStore(
+      snapshot: IssueCacheSnapshot(
+        issues: [task],
+        lastSyncedAt: nil,
+        projectFieldAccess: .missingScope
+      )
+    )
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(
+        client: ViewModelIssueFetcher(result: .success([task])),
+        projectFieldClient: MenuBarProjectFieldStub(
+          result: ProjectFieldFetchResult(
+            fieldsByIssueNumber: [
+              1: IssueProjectFields(dueDate: ProjectDate(githubDate: "2026-07-28"), deferUntil: nil)
+            ],
+            access: .available
+          )
+        ),
+        cacheStore: cache
+      ),
+      filterStore: ViewModelFilterStore(),
+      now: { now },
+      calendar: calendar
+    )
+    var emitted: [Int] = []
+    let subscription = viewModel.menuBarCountPublisher(
+      for: Just(MenuBarCount.today).eraseToAnyPublisher()
+    )
+    .sink { emitted.append($0.count) }
+
+    await viewModel.refresh(token: "token")
+
+    #expect(emitted.first == 0)
+    #expect(emitted.last == 1)
+    subscription.cancel()
   }
 
   private func makeMenuBarCountViewModel(
@@ -595,6 +651,14 @@ private func viewModelTestIssue(number: Int) -> LifeOSIssue {
     labels: [GitHubLabel(name: "status:inbox", color: "ffffff")],
     updatedAt: Date(timeIntervalSince1970: 1_785_000_000)
   )
+}
+
+private struct MenuBarProjectFieldStub: GitHubProjectFieldFetching {
+  let result: ProjectFieldFetchResult
+
+  func fetchProjectFields(token: String) async throws -> ProjectFieldFetchResult {
+    result
+  }
 }
 
 private actor ViewModelIssueFetcher: GitHubIssueFetching {

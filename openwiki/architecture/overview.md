@@ -65,8 +65,8 @@ constructed. `applicationDidFinishLaunching` sets the activation policy to
 `.accessory`, builds the stores, clients, sync engine, and view models, and wires
 them into:
 
-- `StatusItemController` — the menu bar item and its count badge (Today, Inbox or off, per Settings). Its
-  badge renderer is deliberately outside the Nexus palette: the image is a
+- `StatusItemController` — the menu bar item and its count badge (Today, Inbox
+  or off, per Settings). Its badge renderer is deliberately outside the Nexus palette: the image is a
   **template** image, so its black is a mask macOS tints to match the menu bar
 - `PanelController` + `PanelView` — the task panel, with `TaskDetailView` inside
 - `SettingsWindowController` + `SettingsView` — token entry, the task repository

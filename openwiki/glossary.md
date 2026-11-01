@@ -35,7 +35,8 @@ Active, Waiting, Scheduled, Someday (`TaskStatusSection`). Each maps to
 `status:<name>`.
 
 **Today** — the derived view of tasks due today or overdue, excluding tasks
-deferred to a later date. Drives the menu bar badge when Settings → Menu bar count is Today (the default).
+deferred to a later date. Drives the menu bar badge when Settings → Menu bar
+count is Today, the default.
 
 **Project fields** — the Due Date and Defer Until date fields on the GitHub
 Project v2 items attached to open issues. Read-only; requires the `read:project`

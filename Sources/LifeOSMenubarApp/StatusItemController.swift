@@ -29,15 +29,11 @@ final class StatusItemController {
     button.target = self
     button.action = #selector(togglePanel(_:))
 
-    Publishers.CombineLatest3(
-      taskListViewModel.$issues,
-      taskListViewModel.$projectFieldAccess,
-      settingsViewModel.$menuBarCount
+    taskListViewModel.menuBarCountPublisher(
+      for: settingsViewModel.$menuBarCount.eraseToAnyPublisher()
     )
-    // `issues` and `projectFieldAccess` are inputs to the count, not
-    // arguments: the view model computes it from its own current state.
-    .sink { [weak self] _, _, setting in
-      self?.updateBadge(count: taskListViewModel.menuBarCount(for: setting), kind: setting)
+    .sink { [weak self] badge in
+      self?.updateBadge(count: badge.count, kind: badge.kind)
     }
     .store(in: &cancellables)
   }
