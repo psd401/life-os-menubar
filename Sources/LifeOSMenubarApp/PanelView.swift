@@ -15,7 +15,12 @@ struct PanelView: View {
 
   var body: some View {
     Group {
-      if let selectedIssue {
+      if !settingsViewModel.isRepositoryConfigured {
+        // Nothing below this point can work without a task repo: the list would
+        // be empty, and quick add would fail on every attempt. So the panel
+        // shows the one action that fixes it instead of a broken task list.
+        repositorySetup
+      } else if let selectedIssue {
         TaskDetailView(
           issue: selectedIssue,
           token: settingsViewModel.token,
@@ -34,6 +39,46 @@ struct PanelView: View {
         taskList
       }
     }
+  }
+
+  /// First-run state: signed in or not, there is no task repo to read yet.
+  private var repositorySetup: some View {
+    VStack(alignment: .leading, spacing: NexusSpace.s3) {
+      header
+
+      VStack(alignment: .leading, spacing: NexusSpace.s2) {
+        Text("Choose your task repository")
+          .font(NexusFont.headline)
+          .foregroundStyle(palette.ink)
+
+        Text(
+          "Life OS reads its tasks from a GitHub repository you own. Open Settings, "
+            + "enter it as owner/repo, and save it — validation confirms the token can "
+            + "read it and that the required labels exist."
+        )
+        .font(NexusFont.body)
+        .foregroundStyle(palette.inkMuted)
+        .fixedSize(horizontal: false, vertical: true)
+
+        Text("Setting up a repo from scratch: docs/life-os-repo-standard.md")
+          .font(NexusFont.caption1)
+          .foregroundStyle(palette.inkSubtle)
+          .fixedSize(horizontal: false, vertical: true)
+
+        Button("Open settings", action: openSettings)
+          .buttonStyle(.borderedProminent)
+          .tint(palette.action)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(NexusSpace.s3)
+      .background(palette.surfaceRaised, in: RoundedRectangle(cornerRadius: NexusRadius.md))
+
+      Spacer()
+
+      footer
+    }
+    .padding(NexusSpace.s4)
+    .frame(width: PanelMetrics.width, height: PanelMetrics.height)
   }
 
   private var taskList: some View {

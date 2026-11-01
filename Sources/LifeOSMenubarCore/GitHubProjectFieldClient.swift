@@ -3,7 +3,7 @@ import Foundation
 public enum GitHubProjectFieldClientError: LocalizedError, Equatable, Sendable {
   case emptyToken
   case invalidResponse
-  case missingRepository
+  case missingRepository(repository: String)
   case missingPageCursor
   case rejected
   case requestFailed(statusCode: Int)
@@ -16,8 +16,8 @@ public enum GitHubProjectFieldClientError: LocalizedError, Equatable, Sendable {
       "Add a GitHub token in Settings before refreshing project dates."
     case .invalidResponse:
       "GitHub returned an invalid Project v2 response."
-    case .missingRepository:
-      "The GitHub token cannot read krishagel/life-os."
+    case .missingRepository(let repository):
+      "The GitHub token cannot read \(repository). Check the task repository in Settings."
     case .missingPageCursor:
       "GitHub returned an invalid Project v2 pagination cursor."
     case .rejected:
@@ -35,19 +35,16 @@ public enum GitHubProjectFieldClientError: LocalizedError, Equatable, Sendable {
 public struct GitHubGraphQLProjectFieldClient: GitHubProjectFieldFetching {
   private let session: URLSession
   private let endpoint: URL
-  private let owner: String
-  private let repository: String
+  private let repositoryStore: any TaskRepositoryStoring
 
   public init(
     session: URLSession = .shared,
     endpoint: URL = URL(string: "https://api.github.com/graphql")!,
-    owner: String = "krishagel",
-    repository: String = "life-os"
+    repositoryStore: any TaskRepositoryStoring = UserDefaultsTaskRepositoryStore()
   ) {
     self.session = session
     self.endpoint = endpoint
-    self.owner = owner
-    self.repository = repository
+    self.repositoryStore = repositoryStore
   }
 
   public func fetchProjectFields(token: String) async throws -> ProjectFieldFetchResult {
@@ -56,6 +53,7 @@ public struct GitHubGraphQLProjectFieldClient: GitHubProjectFieldFetching {
       throw GitHubProjectFieldClientError.emptyToken
     }
 
+    let taskRepository = try repositoryStore.requireRepository()
     var cursor: String?
     var fieldsByIssueNumber: [Int: IssueProjectFields] = [:]
 
@@ -63,8 +61,8 @@ public struct GitHubGraphQLProjectFieldClient: GitHubProjectFieldFetching {
       let request = try makeRequest(
         token: trimmedToken,
         variables: ProjectFieldQueryVariables(
-          owner: owner,
-          repository: repository,
+          owner: taskRepository.owner,
+          repository: taskRepository.name,
           cursor: cursor
         )
       )
@@ -76,7 +74,7 @@ public struct GitHubGraphQLProjectFieldClient: GitHubProjectFieldFetching {
         throw GitHubProjectFieldClientError.graphQLError(message: error.message)
       }
       guard let repository = response.data?.repository else {
-        throw GitHubProjectFieldClientError.missingRepository
+        throw GitHubProjectFieldClientError.missingRepository(repository: taskRepository.slug)
       }
 
       for node in repository.issues.nodes {

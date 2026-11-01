@@ -11,8 +11,15 @@ Terms used in this repo's code, issues, and wiki.
 **Task** — a GitHub issue in the task repo. The app never stores a task that does
 not exist as an issue.
 
-**Task repo** — the GitHub repo whose issues are the task list. Currently
-hardcoded to `krishagel/life-os`; see [decision 0005](decisions/0005-configurable-task-repo.md).
+**Task repo** — the GitHub repo whose issues are the task list. Configured per
+install as `owner/repo` (`TaskRepository`, stored in `UserDefaults`); there is no
+default. What a conforming repo must contain is
+[the task-repo standard](../docs/life-os-repo-standard.md); see
+[decision 0005](decisions/0005-configurable-task-repo.md).
+
+**Required label** — one of the thirteen label *definitions* a task repo must
+already have (`LabelRules.requiredLabelNames`). `TaskRepositoryValidator` checks
+them before Settings saves a repo; the app never creates them.
 
 **Contract label** — a label in the `status:` or `priority:` family. Exactly one
 of each must be present on every task; `LabelRules` enforces this on every write

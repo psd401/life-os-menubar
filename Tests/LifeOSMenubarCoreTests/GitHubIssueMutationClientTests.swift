@@ -9,7 +9,7 @@ struct GitHubIssueMutationClientTests {
   func postsTrimmedCommentToExpectedRESTEndpoint() async throws {
     MutationURLProtocolStub.handler = { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url?.path == "/repos/krishagel/life-os/issues/42/comments")
+      #expect(request.url?.path == "/repos/\(TaskRepositoryFixture.slug)/issues/42/comments")
       #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer mutation-token")
       let body = try JSONDecoder().decode(
         CommentRequestPayload.self,
@@ -46,7 +46,7 @@ struct GitHubIssueMutationClientTests {
   func closesIssueWithLabelsAndStateInOnePatch() async throws {
     MutationURLProtocolStub.handler = { request in
       #expect(request.httpMethod == "PATCH")
-      #expect(request.url?.path == "/repos/krishagel/life-os/issues/42")
+      #expect(request.url?.path == "/repos/\(TaskRepositoryFixture.slug)/issues/42")
       let body = try JSONDecoder().decode(
         UpdateRequestPayload.self,
         from: try mutationRequestBody(from: request)
@@ -74,7 +74,7 @@ struct GitHubIssueMutationClientTests {
   func createsIssueWithTrimmedContentAndContractLabels() async throws {
     MutationURLProtocolStub.handler = { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.url?.path == "/repos/krishagel/life-os/issues")
+      #expect(request.url?.path == "/repos/\(TaskRepositoryFixture.slug)/issues")
       let body = try JSONDecoder().decode(
         CreateRequestPayload.self,
         from: try mutationRequestBody(from: request)
@@ -156,12 +156,52 @@ struct GitHubIssueMutationClientTests {
     }
   }
 
-  private func makeMutationClient() -> GitHubRESTIssueClient {
+  @Test
+  func writesToTheConfiguredRepositoryRatherThanAnyBuiltInDefault() async throws {
+    MutationURLProtocolStub.handler = { request in
+      #expect(request.url?.path == "/repos/acme/work-tasks/issues")
+      return try mutationResponse(
+        for: request,
+        statusCode: 201,
+        json: issueMutationJSON(state: "open")
+      )
+    }
+
+    let client = makeMutationClient(
+      repositoryStore: InMemoryTaskRepositoryStore(
+        repository: TaskRepository(owner: "acme", name: "work-tasks")
+      )
+    )
+    _ = try await client.createIssue(
+      token: "token",
+      title: "Captured task",
+      body: "",
+      labels: ["status:inbox"]
+    )
+  }
+
+  @Test
+  func refusesToGuessARepositoryWhenNoneIsConfigured() async {
+    MutationURLProtocolStub.handler = { _ in
+      Issue.record("An unconfigured install must not reach GitHub.")
+      throw URLError(.badURL)
+    }
+
+    await #expect(throws: TaskRepositoryConfigurationError.notConfigured) {
+      try await makeMutationClient(repositoryStore: InMemoryTaskRepositoryStore())
+        .createIssue(token: "token", title: "Captured task", body: "", labels: [])
+    }
+  }
+
+  private func makeMutationClient(
+    repositoryStore: any TaskRepositoryStoring = TaskRepositoryFixture.store
+  ) -> GitHubRESTIssueClient {
     let configuration = URLSessionConfiguration.ephemeral
     configuration.protocolClasses = [MutationURLProtocolStub.self]
     return GitHubRESTIssueClient(
       session: URLSession(configuration: configuration),
-      endpoint: URL(string: "https://example.test")!
+      endpoint: URL(string: "https://example.test")!,
+      repositoryStore: repositoryStore
     )
   }
 }

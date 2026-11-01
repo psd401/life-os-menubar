@@ -39,19 +39,16 @@ public enum GitHubIssueDetailClientError: LocalizedError, Equatable, Sendable {
 public struct GitHubGraphQLIssueDetailClient: GitHubIssueDetailFetching {
   private let session: URLSession
   private let endpoint: URL
-  private let owner: String
-  private let repository: String
+  private let repositoryStore: any TaskRepositoryStoring
 
   public init(
     session: URLSession = .shared,
     endpoint: URL = URL(string: "https://api.github.com/graphql")!,
-    owner: String = "krishagel",
-    repository: String = "life-os"
+    repositoryStore: any TaskRepositoryStoring = UserDefaultsTaskRepositoryStore()
   ) {
     self.session = session
     self.endpoint = endpoint
-    self.owner = owner
-    self.repository = repository
+    self.repositoryStore = repositoryStore
   }
 
   public func fetchIssueDetail(token: String, number: Int) async throws -> LifeOSIssueDetail {
@@ -60,14 +57,15 @@ public struct GitHubGraphQLIssueDetailClient: GitHubIssueDetailFetching {
       throw GitHubIssueDetailClientError.emptyToken
     }
 
+    let taskRepository = try repositoryStore.requireRepository()
     var cursor: String?
     var issue: LifeOSIssue?
     var commentsByID: [String: GitHubComment] = [:]
 
     repeat {
       let variables = IssueDetailQueryVariables(
-        owner: owner,
-        repository: repository,
+        owner: taskRepository.owner,
+        repository: taskRepository.name,
         number: number,
         cursor: cursor
       )

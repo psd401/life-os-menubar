@@ -8,7 +8,12 @@ import SwiftUI
 /// controller and the view.
 enum SettingsMetrics {
   static let width: CGFloat = 520
-  static let height: CGFloat = 430
+  /// Grown for the "Task repository" section added in
+  /// [#21](https://github.com/psd401/life-os-menubar/issues/21); the form has a
+  /// fixed frame, so a section that does not fit is a clipped section. Sized for
+  /// that section's tallest state — a repository that failed validation, which
+  /// shows both the three-line missing-labels notice and the unconfigured one.
+  static let height: CGFloat = 740
 }
 
 struct SettingsView: View {
@@ -75,6 +80,69 @@ struct SettingsView: View {
       }
 
       Section {
+        TextField("owner/repo", text: $viewModel.repositorySlug)
+          .textFieldStyle(.roundedBorder)
+          .font(NexusFont.body)
+          .frame(height: NexusSize.macControl)
+          .accessibilityLabel("Task repository, as owner slash repo")
+
+        HStack(spacing: NexusSpace.s2) {
+          Button("Save and validate repository") {
+            Task {
+              await viewModel.saveAndValidateRepository()
+            }
+          }
+          .buttonStyle(.bordered)
+          .disabled(
+            viewModel.repositorySlug.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+              || viewModel.repositoryState == .validating
+          )
+
+          Button("Clear repository", role: .destructive) {
+            viewModel.clearRepository()
+          }
+          .buttonStyle(.bordered)
+          .disabled(!viewModel.isRepositoryConfigured && viewModel.repositorySlug.isEmpty)
+        }
+
+        // The verdict sits on its own row rather than beside the buttons: a
+        // badge sharing the row squeezes "Save and validate repository" until
+        // macOS truncates the button's own label.
+        repositoryStatus
+
+        // The reason goes on its own full-width row, not inside the badge: the
+        // missing-label message names every missing label, and a badge sharing
+        // a row with two buttons truncates it to the first two.
+        if case .invalid(let message) = viewModel.repositoryState {
+          SettingsNotice(
+            message: message,
+            systemImage: "exclamationmark.triangle",
+            foreground: palette.dangerInk
+          )
+        }
+
+        if !viewModel.isRepositoryConfigured {
+          SettingsNotice(
+            message: "No task repository is set yet. Enter the owner/repo of a repo that "
+              + "follows docs/life-os-repo-standard.md, then save and validate it.",
+            systemImage: "folder.badge.questionmark",
+            foreground: palette.warningInk
+          )
+        }
+
+        Text(
+          "Validation checks that this token can read the repository and that every "
+            + "required status, priority, type, and source label already exists."
+        )
+        .font(NexusFont.caption1)
+        .foregroundStyle(palette.inkMuted)
+      } header: {
+        Text("Task repository")
+          .font(NexusFont.headline)
+          .foregroundStyle(palette.ink)
+      }
+
+      Section {
         KeyboardShortcuts.Recorder(
           "Quick capture shortcut",
           name: .quickCapture
@@ -130,6 +198,27 @@ struct SettingsView: View {
     .scrollContentBackground(.hidden)
     .padding(NexusSpace.s4)
     .frame(width: SettingsMetrics.width, height: SettingsMetrics.height)
+  }
+
+  /// The repository's own status badge. Same Nexus rule as the token badge: the
+  /// word carries the meaning, the color only reinforces it.
+  @ViewBuilder
+  private var repositoryStatus: some View {
+    switch viewModel.repositoryState {
+    case .idle:
+      EmptyView()
+    case .validating:
+      ProgressView()
+        .controlSize(.small)
+    case .valid(let slug):
+      NexusBadge("Valid · \(slug)", tone: .success)
+        .accessibilityLabel("Task repository \(slug) is valid")
+    case .invalid:
+      // The reason is the notice below this row, so the badge is only the
+      // verdict — still a word beside the color, per the Nexus rule.
+      NexusBadge("Not valid", tone: .danger)
+        .accessibilityLabel("Task repository is not valid")
+    }
   }
 
   @ViewBuilder

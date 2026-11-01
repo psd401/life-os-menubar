@@ -13,7 +13,16 @@ The app treats two label families as a contract every task must satisfy:
 | Status | `status:` | exactly one | `status:inbox` |
 | Priority | `priority:` | exactly one | `priority:p2` |
 
-`LabelRules` is the only place this is enforced, and it enforces it on every
+`LabelRules` repairs tasks; it does not create label *definitions*. The thirteen
+definitions a task repo must already carry are
+`LabelRules.requiredLabelNames` — the six status sections plus `status:done`, the
+four priorities, `type:task`, and `source:manual` — checked by
+`TaskRepositoryValidator` before Settings will save a repo, and created by
+`scripts/bootstrap-task-repo.sh`. Without the definitions, repair still writes
+the names, but filtering and grouping show empty sections
+([the task-repo standard](../../docs/life-os-repo-standard.md)).
+
+`LabelRules` is the only place the cardinality rule is enforced, and it enforces it on every
 write path. `changingStatus`, `changingPriority`, and `editingNonContractLabel`
 all funnel through one `normalized(_:status:priority:)` pass that:
 

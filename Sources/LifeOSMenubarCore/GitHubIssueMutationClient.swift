@@ -54,19 +54,16 @@ public enum GitHubIssueMutationClientError: LocalizedError, Equatable, Sendable 
 public struct GitHubRESTIssueClient: GitHubIssueCreating, GitHubIssueMutating {
   private let session: URLSession
   private let endpoint: URL
-  private let owner: String
-  private let repository: String
+  private let repositoryStore: any TaskRepositoryStoring
 
   public init(
     session: URLSession = .shared,
     endpoint: URL = URL(string: "https://api.github.com")!,
-    owner: String = "krishagel",
-    repository: String = "life-os"
+    repositoryStore: any TaskRepositoryStoring = UserDefaultsTaskRepositoryStore()
   ) {
     self.session = session
     self.endpoint = endpoint
-    self.owner = owner
-    self.repository = repository
+    self.repositoryStore = repositoryStore
   }
 
   public func addComment(
@@ -78,10 +75,11 @@ public struct GitHubRESTIssueClient: GitHubIssueCreating, GitHubIssueMutating {
     guard !comment.isEmpty else {
       throw GitHubIssueMutationClientError.emptyComment
     }
+    let repository = try repositoryStore.requireRepository()
     var request = try makeRequest(
       token: token,
       pathComponents: [
-        "repos", owner, repository, "issues", String(issueNumber), "comments",
+        "repos", repository.owner, repository.name, "issues", String(issueNumber), "comments",
       ],
       method: "POST"
     )
@@ -96,9 +94,10 @@ public struct GitHubRESTIssueClient: GitHubIssueCreating, GitHubIssueMutating {
     labels: [String],
     state: GitHubIssueState?
   ) async throws -> LifeOSIssue {
+    let repository = try repositoryStore.requireRepository()
     var request = try makeRequest(
       token: token,
-      pathComponents: ["repos", owner, repository, "issues", String(issueNumber)],
+      pathComponents: ["repos", repository.owner, repository.name, "issues", String(issueNumber)],
       method: "PATCH"
     )
     request.httpBody = try JSONEncoder().encode(
@@ -122,9 +121,10 @@ public struct GitHubRESTIssueClient: GitHubIssueCreating, GitHubIssueMutating {
       throw GitHubIssueMutationClientError.emptyTitle
     }
     let candidateBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+    let repository = try repositoryStore.requireRepository()
     var request = try makeRequest(
       token: token,
-      pathComponents: ["repos", owner, repository, "issues"],
+      pathComponents: ["repos", repository.owner, repository.name, "issues"],
       method: "POST"
     )
     request.httpBody = try JSONEncoder().encode(

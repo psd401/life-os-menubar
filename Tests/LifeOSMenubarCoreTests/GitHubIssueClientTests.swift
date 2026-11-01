@@ -251,23 +251,77 @@ struct GitHubIssueClientTests {
       )
     }
 
-    await #expect(throws: GitHubIssueClientError.missingRepository) {
+    await #expect(
+      throws: GitHubIssueClientError.missingRepository(repository: TaskRepositoryFixture.slug)
+    ) {
       try await makeClient().fetchIssues(token: "test-token", updatedAfter: nil)
     }
   }
 
-  private func makeClient() -> GitHubGraphQLIssueClient {
+  @Test
+  func sendsTheConfiguredRepositoryRatherThanAnyBuiltInDefault() async throws {
+    GraphQLIssueURLProtocolStub.handler = { request in
+      let payload = try JSONDecoder().decode(
+        TestIssueRequest.self,
+        from: try graphQLRequestBody(from: request)
+      )
+      #expect(payload.variables.owner == "acme")
+      #expect(payload.variables.repository == "work-tasks")
+      return try graphQLResponse(
+        for: request,
+        json: """
+          {
+            "data": {
+              "repository": {
+                "issues": {
+                  "nodes": [],
+                  "pageInfo": {"hasNextPage": false, "endCursor": null}
+                }
+              }
+            }
+          }
+          """
+      )
+    }
+
+    let client = makeClient(
+      repositoryStore: InMemoryTaskRepositoryStore(
+        repository: TaskRepository(owner: "acme", name: "work-tasks")
+      )
+    )
+    _ = try await client.fetchIssues(token: "test-token", updatedAfter: nil)
+  }
+
+  @Test
+  func refusesToGuessARepositoryWhenNoneIsConfigured() async {
+    GraphQLIssueURLProtocolStub.handler = { _ in
+      Issue.record("An unconfigured install must not reach GitHub.")
+      throw URLError(.badURL)
+    }
+
+    await #expect(throws: TaskRepositoryConfigurationError.notConfigured) {
+      try await makeClient(repositoryStore: InMemoryTaskRepositoryStore())
+        .fetchIssues(token: "test-token", updatedAfter: nil)
+    }
+  }
+
+  private func makeClient(
+    repositoryStore: any TaskRepositoryStoring = TaskRepositoryFixture.store
+  ) -> GitHubGraphQLIssueClient {
     let configuration = URLSessionConfiguration.ephemeral
     configuration.protocolClasses = [GraphQLIssueURLProtocolStub.self]
     return GitHubGraphQLIssueClient(
       session: URLSession(configuration: configuration),
-      endpoint: URL(string: "https://example.test/graphql")!
+      endpoint: URL(string: "https://example.test/graphql")!,
+      repositoryStore: repositoryStore
     )
   }
 }
 
 private struct TestIssueRequest: Decodable {
   struct Variables: Decodable {
+    let owner: String
+    let repository: String
     let cursor: String?
     let updatedAfter: String?
     let states: [String]

@@ -59,6 +59,8 @@ public final class TaskListViewModel: ObservableObject {
   private let calendar: Calendar
   private var backgroundRefreshTask: Task<Void, Never>?
   private var lastFullSyncedAt: Date?
+  private var repositoryGeneration = 0
+  private var queuedRefreshToken: String?
 
   public init(
     cacheStore: any IssueCacheStoring,
@@ -94,26 +96,71 @@ public final class TaskListViewModel: ObservableObject {
 
   public func refresh(token: String) async {
     guard !isRefreshing else {
+      // Queue rather than drop. A refresh requested right after the task
+      // repository changed would otherwise be swallowed by the previous
+      // repository's in-flight refresh, leaving the new repo unsynced until
+      // the next timer tick.
+      queuedRefreshToken = token
       return
     }
 
+    var candidate = token
+    isRefreshing = true
+    defer {
+      isRefreshing = false
+    }
+
+    while true {
+      await performRefresh(token: candidate)
+      guard let queuedToken = queuedRefreshToken else {
+        return
+      }
+      queuedRefreshToken = nil
+      candidate = queuedToken
+    }
+  }
+
+  private func performRefresh(token: String) async {
     let candidate = token.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !candidate.isEmpty else {
       errorMessage = GitHubIssueClientError.emptyToken.localizedDescription
       return
     }
 
-    isRefreshing = true
-    defer {
-      isRefreshing = false
-    }
+    // The repository this refresh belongs to. A change while it is in flight
+    // makes both its result and the snapshot the sync engine wrote on the way
+    // out belong to a repository the app is no longer pointed at.
+    let generation = repositoryGeneration
 
     do {
-      apply(try await syncEngine.refresh(token: candidate))
+      let snapshot = try await syncEngine.refresh(token: candidate)
+      guard generation == repositoryGeneration else {
+        discardStaleSnapshot()
+        return
+      }
+      apply(snapshot)
       errorMessage = nil
     } catch {
+      guard generation == repositoryGeneration else {
+        return
+      }
       errorMessage = error.localizedDescription
     }
+  }
+
+  /// Undoes the cache write a refresh for the previous repository performed
+  /// after `resetForRepositoryChange()` had already cleared it.
+  ///
+  /// Clearing the watermark again is the part that matters: left in place, the
+  /// next refresh would be a delta sync asking the *new* repository only for
+  /// issues changed since the *old* repository's last sync, and the stale tasks
+  /// would survive until the 24-hour full reconcile.
+  private func discardStaleSnapshot() {
+    issues = []
+    lastSyncedAt = nil
+    lastFullSyncedAt = nil
+    projectFieldAccess = .unknown
+    clearPersistedCache()
   }
 
   public func startBackgroundRefresh(
@@ -206,6 +253,32 @@ public final class TaskListViewModel: ObservableObject {
     }
     savedFilters.remove(at: savedFilterIndex)
     persistFilters()
+  }
+
+  /// Drops every cached task and both sync watermarks.
+  ///
+  /// Called when the configured task repository changes. The cache is keyed by
+  /// issue number only, so without this the panel would show the previous
+  /// repo's tasks next to the new repo's, and the delta-sync watermark would
+  /// suppress the very fetch that could correct it.
+  public func resetForRepositoryChange() {
+    repositoryGeneration += 1
+    issues = []
+    lastSyncedAt = nil
+    lastFullSyncedAt = nil
+    projectFieldAccess = .unknown
+    errorMessage = nil
+    clearPersistedCache()
+  }
+
+  private func clearPersistedCache() {
+    do {
+      try cacheStore.save(.empty)
+    } catch {
+      errorMessage =
+        "The task repository changed, but the old cache could not be cleared: "
+        + error.localizedDescription
+    }
   }
 
   public func reconcileRemoteIssue(_ issue: LifeOSIssue) {
