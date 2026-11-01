@@ -9,8 +9,8 @@ PSD design-system repo. It is a local SwiftPM package (`.package(path:)` in
 |---|---|
 | Source repo | `psd401/psd-dev-standards` (internal) |
 | Source path | `design-system/nexus/apple/NexusKit` |
-| Source commit | `4affbd159b3db58a8fc34c3ac6fdc7a13eec1eac` |
-| Vendored on | 2026-10-31 |
+| Source commit | `2cf88797ac80afc61c51cf1e2dedb81386514fd6` ([psd-dev-standards#194](https://github.com/psd401/psd-dev-standards/pull/194): Xcode 26.6 type-check fix in `NexusGallery2.swift`) |
+| Vendored on | 2026-11-01 (first copy 2026-10-31, from `4affbd159b3db58a8fc34c3ac6fdc7a13eec1eac`) |
 | Vendored for | [#19](https://github.com/psd401/life-os-menubar/issues/19) |
 
 ## Do not edit anything in this directory

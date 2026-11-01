@@ -221,7 +221,13 @@ enum NexusSamples {
     return ScrollView {
         VStack(alignment: .leading, spacing: 28) {
             NexusPivotTable(title: "Attendance by school and grade", rowKeys: schools, columnKeys: grades, rowLabel: "School",
-                            value: { r, c in 88 + Double((r.count * 3 + c.count * 7 + (Int(c) ?? 0) * 5) % 9) },
+                            value: { r, c in
+                                // Typed in steps: as one expression returned into `Double?`, Xcode 26's
+                                // type checker gives up on it ("unable to type-check … in reasonable time").
+                                let seed: Int = r.count * 3 + c.count * 7 + (Int(c) ?? 0) * 5
+                                let percent: Double = 88 + Double(seed % 9)
+                                return percent
+                            },
                             n: { r, _ in r == "Vaughn" ? 4 : 60 })
             NexusDiffTable(title: "Proposed roster changes", subtitle: "From the agent · review before saving", headers: ["Student", "School", "Grade"], rows: [
                 NexusDiffRow(id: "a", op: .change, values: ["A. Rivera", "Discovery", "4"], old: [1: "Artondale"]),
