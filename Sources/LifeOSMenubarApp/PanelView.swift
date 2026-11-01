@@ -56,10 +56,6 @@ struct PanelView: View {
         },
         onCreated: { createdIssue in
           taskListViewModel.reconcileRemoteIssue(createdIssue)
-          // A composed task carries no due date, so it can never show up in
-          // Today. Drop back to All so the new row is actually visible instead
-          // of the field just silently clearing.
-          listMode = .all
         }
       )
 
@@ -178,9 +174,17 @@ private enum PanelListMode: String, CaseIterable {
 /// untouched so every task it creates carries the Agent Operating Contract
 /// defaults (`status:inbox`, `type:task`, `source:manual`, `priority:p2`). The
 /// capture window remains the place to override priority or add notes.
+///
+/// Success is reported in the composer rather than by making the new row
+/// visible. The row can legitimately be filtered out of view — by the Today
+/// mode (a composed task has no due date), by the search query, or by an
+/// active label filter — and the alternative, resetting the mode, query and
+/// filters on every add, throws away view state the user set deliberately,
+/// including the filter selection that `TaskListViewModel` persists to disk.
 private struct QuickAddComposerView: View {
   @ObservedObject var viewModel: QuickCaptureViewModel
   @FocusState private var isTitleFocused: Bool
+  @State private var createdIssueNumber: Int?
 
   let tokenProvider: @MainActor () -> String
   let onCreated: (LifeOSIssue) -> Void
@@ -220,6 +224,19 @@ private struct QuickAddComposerView: View {
           .foregroundStyle(.red)
           .fixedSize(horizontal: false, vertical: true)
           .accessibilityLabel("Add task error: \(errorMessage)")
+      } else if let createdIssueNumber {
+        Label("Added #\(createdIssueNumber) to Inbox", systemImage: "checkmark.circle.fill")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .accessibilityLabel("Added task number \(createdIssueNumber) to Inbox")
+      }
+    }
+    // Clear the confirmation once the next title is being typed. Keyed on a
+    // non-empty title on purpose: the success path itself empties the field, so
+    // keying on any change would race the confirmation away as it appears.
+    .onChange(of: viewModel.title) {
+      if !viewModel.title.isEmpty {
+        createdIssueNumber = nil
       }
     }
     .onAppear {
@@ -236,9 +253,11 @@ private struct QuickAddComposerView: View {
     guard viewModel.canSubmit else {
       return
     }
+    createdIssueNumber = nil
     Task {
       if let createdIssue = await viewModel.submit(token: tokenProvider()) {
         onCreated(createdIssue)
+        createdIssueNumber = createdIssue.number
       }
       // Keep the caret in the field either way: ready for the next task on
       // success, and on the retained text after a failure.
