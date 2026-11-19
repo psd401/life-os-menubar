@@ -267,22 +267,22 @@ private actor ControlledTaskRepositoryValidator: TaskRepositoryValidating {
 
 private final class TokenStoreStub: TokenStoring, @unchecked Sendable {
   private let lock = NSLock()
-  private var storedToken: String?
+  private var storedCredential: GitHubCredential?
 
   init(storedToken: String?) {
-    self.storedToken = storedToken
+    self.storedCredential = storedToken.map { GitHubCredential(accessToken: $0) }
   }
 
-  func loadToken() throws -> String? {
-    lock.withLock { storedToken }
+  func loadCredential() throws -> GitHubCredential? {
+    lock.withLock { storedCredential }
   }
 
-  func saveToken(_ token: String) throws {
-    lock.withLock { storedToken = token }
+  func saveCredential(_ credential: GitHubCredential) throws {
+    lock.withLock { storedCredential = credential }
   }
 
-  func deleteToken() throws {
-    lock.withLock { storedToken = nil }
+  func deleteCredential() throws {
+    lock.withLock { storedCredential = nil }
   }
 }
 

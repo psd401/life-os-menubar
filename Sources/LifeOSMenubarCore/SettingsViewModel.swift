@@ -37,12 +37,22 @@ public final class SettingsViewModel: ObservableObject {
   @Published public private(set) var launchAtLoginError: String?
   @Published public private(set) var badgePreferenceError: String?
   @Published public private(set) var deviceFlowState: DeviceFlowState = .idle
+  /// True once GitHub has refused to renew the stored credential. Only a new
+  /// sign-in, a saved token, or signing out ends it.
+  @Published public private(set) var isSignInExpired = false
+
+  /// How early an expiring access token is renewed. It is longer than the
+  /// five-minute background refresh, so while the app is awake the background
+  /// loop renews the token before any request can find it expired.
+  public static let accessTokenRefreshMargin: TimeInterval = 15 * 60
 
   private let tokenStore: any TokenStoring
   private let validator: any GitHubTokenValidating
   private let launchAtLoginController: any LaunchAtLoginControlling
   private let badgePreferenceStore: any MenuBarCountPreferenceStoring
   private let deviceFlow: any DeviceFlowAuthorizing
+  private let tokenRefresher: any GitHubTokenRefreshing
+  private let now: @Sendable () -> Date
   private let verificationPageOpener: @MainActor @Sendable (URL) -> Void
   private let onSignOut: @MainActor () -> Void
   private let repositoryStore: any TaskRepositoryStoring
@@ -51,6 +61,13 @@ public final class SettingsViewModel: ObservableObject {
   private var validationGeneration = 0
   private var deviceFlowGeneration = 0
   private var repositoryValidationGeneration = 0
+  /// What the Keychain holds. `token` mirrors its access token, except while
+  /// the user types a replacement into the advanced field.
+  private var credential: GitHubCredential?
+  /// Bumped whenever the stored credential is replaced or removed, so a
+  /// refresh started for the old one cannot write its result over the new.
+  private var credentialGeneration = 0
+  private var credentialRefresh: Task<Void, Never>?
 
   public init(
     tokenStore: any TokenStoring,
@@ -59,6 +76,8 @@ public final class SettingsViewModel: ObservableObject {
     badgePreferenceStore: any MenuBarCountPreferenceStoring =
       UserDefaultsMenuBarCountPreferenceStore(),
     deviceFlow: any DeviceFlowAuthorizing = GitHubDeviceFlowAuthorizer(),
+    tokenRefresher: any GitHubTokenRefreshing = GitHubDeviceFlowAuthorizer(),
+    now: @escaping @Sendable () -> Date = Date.init,
     // Opening a URL is AppKit's job, and Core has no AppKit, so the app target
     // injects the opener.
     verificationPageOpener: @escaping @MainActor @Sendable (URL) -> Void = { _ in },
@@ -75,6 +94,8 @@ public final class SettingsViewModel: ObservableObject {
     self.launchAtLoginController = launchAtLoginController
     self.badgePreferenceStore = badgePreferenceStore
     self.deviceFlow = deviceFlow
+    self.tokenRefresher = tokenRefresher
+    self.now = now
     self.verificationPageOpener = verificationPageOpener
     self.onSignOut = onSignOut
     self.repositoryStore = repositoryStore
@@ -83,7 +104,9 @@ public final class SettingsViewModel: ObservableObject {
     self.isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
 
     do {
-      self.token = try tokenStore.loadToken() ?? ""
+      let storedCredential = try tokenStore.loadCredential()
+      self.credential = storedCredential
+      self.token = storedCredential?.accessToken ?? ""
     } catch {
       self.token = ""
       self.persistenceError = error.localizedDescription
@@ -131,10 +154,6 @@ public final class SettingsViewModel: ObservableObject {
 
     deviceFlowGeneration += 1
     let generation = deviceFlowGeneration
-    // Captured now, not after the wait: the advanced field writes to `token`
-    // too, so reading it minutes later could pick up a half-typed draft and
-    // then "restore" that instead of the real previous credential.
-    let tokenBeforeSignIn = token
 
     deviceFlowState = .requestingCode
     do {
@@ -145,17 +164,16 @@ public final class SettingsViewModel: ObservableObject {
       deviceFlowState = .awaitingApproval(authorization)
       verificationPageOpener(authorization.verificationURL)
 
-      let issuedToken = try await deviceFlow.waitForAccessToken(authorization: authorization)
+      let grant = try await deviceFlow.waitForAccessToken(authorization: authorization)
       guard generation == deviceFlowGeneration else {
         return
       }
 
-      token = issuedToken
-      guard saveToken() else {
-        // The Keychain write failed, so nothing was stored: put back the
-        // credential this attempt started from rather than leaving the field
-        // holding a token the app cannot persist.
-        token = tokenBeforeSignIn
+      // The whole grant is stored, refresh token included: with token
+      // expiration on, the access token alone stops working after 8 hours.
+      guard store(grant.credential(issuedAt: now())) else {
+        // The Keychain write failed, so nothing was stored and the previous
+        // credential is still the one in use.
         deviceFlowState = .failed(
           message: persistenceError ?? DeviceFlowError.invalidResponse.localizedDescription
         )
@@ -193,9 +211,18 @@ public final class SettingsViewModel: ObservableObject {
     guard isSignedIn else {
       return
     }
+    await refreshCredentialIfNeeded()
+    // Validating a token GitHub would not renew only replaces "sign in again"
+    // with a vaguer "GitHub rejected this token".
+    guard !isSignInExpired else {
+      return
+    }
     await validateToken()
   }
 
+  /// Saves the token typed into the advanced field. A pasted token is a
+  /// personal access token: no refresh token comes with it, and the app does
+  /// not know when it expires.
   @discardableResult
   public func saveToken() -> Bool {
     let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -203,16 +230,135 @@ public final class SettingsViewModel: ObservableObject {
       persistenceError = GitHubTokenValidationError.emptyToken.localizedDescription
       return false
     }
+    return store(GitHubCredential(accessToken: trimmedToken))
+  }
 
+  /// Replaces the stored credential. Both sign-in paths end here.
+  private func store(_ newCredential: GitHubCredential) -> Bool {
     do {
-      try tokenStore.saveToken(trimmedToken)
-      token = trimmedToken
-      persistenceError = nil
-      validationState = .idle
-      return true
+      try tokenStore.saveCredential(newCredential)
     } catch {
       persistenceError = error.localizedDescription
       return false
+    }
+    credentialGeneration += 1
+    credential = newCredential
+    token = newCredential.accessToken
+    isSignInExpired = false
+    persistenceError = nil
+    validationState = .idle
+    return true
+  }
+
+  // MARK: - Expiring tokens
+
+  /// The access token to send to GitHub now: the stored one, renewed first if
+  /// it expires within `accessTokenRefreshMargin`. Empty when signed out.
+  ///
+  /// Every request path goes through this rather than reading `token`, which
+  /// can hold an unsaved draft from the advanced field.
+  public func freshAccessToken() async -> String {
+    await refreshCredentialIfNeeded()
+    return credential?.accessToken ?? ""
+  }
+
+  /// Renews the stored credential if it is about to expire.
+  ///
+  /// One refresh at a time: a refresh token works once, so a second request
+  /// spending it concurrently would be refused and read as an expired
+  /// sign-in. Callers that arrive mid-refresh wait for that one.
+  public func refreshCredentialIfNeeded() async {
+    if let credentialRefresh {
+      await credentialRefresh.value
+      return
+    }
+    guard
+      !isSignInExpired,
+      let expiring = credential,
+      expiring.needsRefresh(at: now(), margin: Self.accessTokenRefreshMargin)
+    else {
+      return
+    }
+
+    // Unstructured, so cancelling a caller cannot abandon a refresh GitHub has
+    // already answered: its new pair has to be stored either way.
+    let refresh = Task {
+      await renew(expiring, generation: credentialGeneration)
+    }
+    credentialRefresh = refresh
+    await refresh.value
+    credentialRefresh = nil
+  }
+
+  private func renew(_ expiring: GitHubCredential, generation: Int) async {
+    // A sign-out or new sign-in can land between scheduling this and running it.
+    guard generation == credentialGeneration else {
+      return
+    }
+    var expiring = expiring
+    // An installed build and a development build share this Keychain item.
+    // If the other copy renewed first, its refresh token has already spent
+    // this one, so use what it stored instead of asking GitHub again. Tokens,
+    // not whole credentials, are compared: a stored expiry can differ from the
+    // in-memory one by a rounding step without meaning anything changed.
+    if let stored = try? tokenStore.loadCredential(),
+      stored.accessToken != expiring.accessToken
+    {
+      adopt(stored)
+      guard stored.needsRefresh(at: now(), margin: Self.accessTokenRefreshMargin) else {
+        return
+      }
+      expiring = stored
+    }
+    guard let refreshToken = expiring.refreshToken else {
+      return
+    }
+
+    do {
+      let grant = try await tokenRefresher.refreshAccessToken(refreshToken: refreshToken)
+      guard generation == credentialGeneration else {
+        return
+      }
+      let renewed = grant.credential(issuedAt: now())
+      do {
+        try tokenStore.saveCredential(renewed)
+      } catch {
+        // GitHub retired the old pair when it issued this one, so the new
+        // token is used regardless; only the next launch is affected.
+        persistenceError = error.localizedDescription
+      }
+      adopt(renewed)
+    } catch {
+      guard generation == credentialGeneration else {
+        return
+      }
+      // Offline, or GitHub failing: keep the credential and try on the next
+      // request. Only GitHub refusing the refresh token ends the sign-in.
+      if Self.isRefusal(error) {
+        isSignInExpired = true
+        validationState = .invalid(message: error.localizedDescription)
+      }
+    }
+  }
+
+  /// Makes `newCredential` the one in use. The advanced field follows it only
+  /// if it was showing the previous token, so a half-typed replacement is
+  /// never overwritten.
+  private func adopt(_ newCredential: GitHubCredential) {
+    if token.trimmingCharacters(in: .whitespacesAndNewlines) == (credential?.accessToken ?? "") {
+      token = newCredential.accessToken
+    }
+    credential = newCredential
+  }
+
+  /// True when GitHub answered the refresh with an OAuth error, such as
+  /// `bad_refresh_token`, rather than failing to answer at all.
+  private static func isRefusal(_ error: any Error) -> Bool {
+    switch error as? DeviceFlowError {
+    case nil, .requestFailed, .invalidResponse:
+      false
+    case .some:
+      true
     }
   }
 
@@ -276,8 +422,11 @@ public final class SettingsViewModel: ObservableObject {
     deviceFlowGeneration += 1
     validationGeneration += 1
     do {
-      try tokenStore.deleteToken()
+      try tokenStore.deleteCredential()
+      credentialGeneration += 1
+      credential = nil
       token = ""
+      isSignInExpired = false
       validationState = .idle
       deviceFlowState = .idle
       persistenceError = nil

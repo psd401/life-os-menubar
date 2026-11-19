@@ -233,9 +233,11 @@ public final class TaskListViewModel: ObservableObject {
     clearPersistedCache()
   }
 
+  /// Refreshes every `interval`. `tokenProvider` is async because getting a
+  /// token can mean renewing an expiring one first.
   public func startBackgroundRefresh(
     every interval: Duration = .seconds(300),
-    tokenProvider: @escaping @MainActor () -> String
+    tokenProvider: @escaping @MainActor () async -> String
   ) {
     backgroundRefreshTask?.cancel()
     backgroundRefreshTask = Task { @MainActor [weak self] in

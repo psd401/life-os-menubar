@@ -1,10 +1,15 @@
 import Foundation
 import Security
 
+/// Persistence for the one GitHub credential: its access token and, for an
+/// expiring token, the refresh token and expiry that go with it. The three are
+/// one item so a refresh replaces them in a single write — GitHub retires the
+/// old refresh token the moment it issues a new one, so a half-written pair
+/// would be unrecoverable.
 public protocol TokenStoring: Sendable {
-  func loadToken() throws -> String?
-  func saveToken(_ token: String) throws
-  func deleteToken() throws
+  func loadCredential() throws -> GitHubCredential?
+  func saveCredential(_ credential: GitHubCredential) throws
+  func deleteCredential() throws
 }
 
 public struct KeychainError: LocalizedError, Equatable, Sendable {
@@ -26,6 +31,8 @@ public struct KeychainTokenStore: TokenStoring {
   private let service: String
   private let account: String
 
+  // The account name predates OAuth sign-in. It stays, so the item an earlier
+  // version wrote is the item this one reads.
   public init(
     service: String = "com.krishagel.LifeOSMenubar",
     account: String = "github-personal-access-token"
@@ -34,7 +41,7 @@ public struct KeychainTokenStore: TokenStoring {
     self.account = account
   }
 
-  public func loadToken() throws -> String? {
+  public func loadCredential() throws -> GitHubCredential? {
     var query = baseQuery
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -49,15 +56,15 @@ public struct KeychainTokenStore: TokenStoring {
     }
     guard
       let data = result as? Data,
-      let token = String(data: data, encoding: .utf8)
+      let credential = GitHubCredential(storedData: data)
     else {
       throw KeychainError(status: errSecDecode)
     }
-    return token
+    return credential
   }
 
-  public func saveToken(_ token: String) throws {
-    let data = Data(token.utf8)
+  public func saveCredential(_ credential: GitHubCredential) throws {
+    let data = try credential.storedData()
     let update = [kSecValueData as String: data]
     let updateStatus = SecItemUpdate(baseQuery as CFDictionary, update as CFDictionary)
 
@@ -76,7 +83,7 @@ public struct KeychainTokenStore: TokenStoring {
     }
   }
 
-  public func deleteToken() throws {
+  public func deleteCredential() throws {
     let status = SecItemDelete(baseQuery as CFDictionary)
     guard status == errSecSuccess || status == errSecItemNotFound else {
       throw KeychainError(status: status)

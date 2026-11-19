@@ -6,7 +6,9 @@ import Testing
 struct DeviceFlowAuthorizerTests {
   @Test
   func isUnavailableAndRefusesToStartWhenNoClientIDIsConfigured() async {
-    let requester = DeviceFlowRequesterStub(outcomes: [.authorized(token: "never-used")])
+    let requester = DeviceFlowRequesterStub(outcomes: [
+      .authorized(GitHubTokenGrant(accessToken: "never-used"))
+    ])
     let authorizer = GitHubDeviceFlowAuthorizer(
       clientID: "",
       client: requester,
@@ -42,7 +44,7 @@ struct DeviceFlowAuthorizerTests {
     let requester = DeviceFlowRequesterStub(outcomes: [
       .authorizationPending,
       .authorizationPending,
-      .authorized(token: "gho_test"),
+      .authorized(GitHubTokenGrant(accessToken: "gho_test")),
     ])
     let clock = RecordingClock()
     let authorizer = GitHubDeviceFlowAuthorizer(
@@ -55,7 +57,7 @@ struct DeviceFlowAuthorizerTests {
       authorization: makeAuthorization(pollIntervalSeconds: 5)
     )
 
-    #expect(token == "gho_test")
+    #expect(token == GitHubTokenGrant(accessToken: "gho_test"))
     #expect(await clock.sleptSeconds == [5, 5, 5])
     #expect(await requester.redeemedDeviceCodes == ["dc-1", "dc-1", "dc-1"])
   }
@@ -64,7 +66,7 @@ struct DeviceFlowAuthorizerTests {
   func addsFiveSecondsToTheIntervalWhenGitHubAsksTheAppToSlowDown() async throws {
     let requester = DeviceFlowRequesterStub(outcomes: [
       .slowDown(pollIntervalSeconds: 5),
-      .authorized(token: "gho_test"),
+      .authorized(GitHubTokenGrant(accessToken: "gho_test")),
     ])
     let clock = RecordingClock()
     let authorizer = GitHubDeviceFlowAuthorizer(
@@ -85,7 +87,7 @@ struct DeviceFlowAuthorizerTests {
   func honoursALongerIntervalThanTheDocumentedIncrement() async throws {
     let requester = DeviceFlowRequesterStub(outcomes: [
       .slowDown(pollIntervalSeconds: 30),
-      .authorized(token: "gho_test"),
+      .authorized(GitHubTokenGrant(accessToken: "gho_test")),
     ])
     let clock = RecordingClock()
     let authorizer = GitHubDeviceFlowAuthorizer(
@@ -145,7 +147,9 @@ struct DeviceFlowAuthorizerTests {
 
   @Test
   func treatsAnIntervalOfZeroAsOneSecondSoPollingCannotSpin() async throws {
-    let requester = DeviceFlowRequesterStub(outcomes: [.authorized(token: "gho_test")])
+    let requester = DeviceFlowRequesterStub(outcomes: [
+      .authorized(GitHubTokenGrant(accessToken: "gho_test"))
+    ])
     let clock = RecordingClock()
     let authorizer = GitHubDeviceFlowAuthorizer(
       clientID: "cid",
@@ -164,7 +168,9 @@ struct DeviceFlowAuthorizerTests {
   func clampsAnAbsurdAuthorizationSoTheLoopArithmeticCannotTrap() async throws {
     // A DeviceAuthorization can be built by any caller, so the ceiling is
     // enforced here too: `elapsed + interval` on Int.max would trap, not throw.
-    let requester = DeviceFlowRequesterStub(outcomes: [.authorized(token: "gho_test")])
+    let requester = DeviceFlowRequesterStub(outcomes: [
+      .authorized(GitHubTokenGrant(accessToken: "gho_test"))
+    ])
     let clock = RecordingClock()
     let authorizer = GitHubDeviceFlowAuthorizer(
       clientID: "cid",
@@ -182,7 +188,7 @@ struct DeviceFlowAuthorizerTests {
       )
     )
 
-    #expect(token == "gho_test")
+    #expect(token == GitHubTokenGrant(accessToken: "gho_test"))
     #expect(await clock.sleptSeconds == [DeviceFlowSeconds.maximum])
   }
 
@@ -190,7 +196,7 @@ struct DeviceFlowAuthorizerTests {
   func givesUpRatherThanTrappingWhenSlowDownAsksForAnAbsurdInterval() async {
     let requester = DeviceFlowRequesterStub(outcomes: [
       .slowDown(pollIntervalSeconds: .max),
-      .authorized(token: "never-reached"),
+      .authorized(GitHubTokenGrant(accessToken: "never-reached")),
     ])
     let clock = RecordingClock()
     let authorizer = GitHubDeviceFlowAuthorizer(
@@ -209,6 +215,41 @@ struct DeviceFlowAuthorizerTests {
     }
 
     #expect(await clock.sleptSeconds == [5])
+  }
+
+  @Test
+  func refreshesWithTheConfiguredClientID() async throws {
+    let renewed = GitHubTokenGrant(
+      accessToken: "gho_new",
+      accessTokenLifetimeSeconds: 28_800,
+      refreshToken: "ghr_new"
+    )
+    let requester = DeviceFlowRequesterStub(outcomes: [], refreshResult: .success(renewed))
+    let authorizer = GitHubDeviceFlowAuthorizer(
+      clientID: "cid",
+      client: requester,
+      clock: RecordingClock()
+    )
+
+    let grant = try await authorizer.refreshAccessToken(refreshToken: "ghr_old")
+
+    #expect(grant == renewed)
+    #expect(await requester.refreshRequests == [RefreshRequest(clientID: "cid", token: "ghr_old")])
+  }
+
+  @Test
+  func refusesToRefreshWhenNoClientIDIsConfigured() async {
+    let requester = DeviceFlowRequesterStub(outcomes: [])
+    let authorizer = GitHubDeviceFlowAuthorizer(
+      clientID: "",
+      client: requester,
+      clock: RecordingClock()
+    )
+
+    await #expect(throws: DeviceFlowError.clientIDMissing) {
+      try await authorizer.refreshAccessToken(refreshToken: "ghr_old")
+    }
+    #expect(await requester.refreshRequests.isEmpty)
   }
 
   private func makeAuthorization(
@@ -235,23 +276,40 @@ actor RecordingClock: DeviceFlowClocking {
   }
 }
 
+struct RefreshRequest: Equatable {
+  let clientID: String
+  let token: String
+}
+
 actor DeviceFlowRequesterStub: DeviceFlowRequesting {
   private var outcomes: [DeviceAccessTokenOutcome]
   private let redeemError: (any Error)?
   private let errorOnCallIndex: Int?
+  private let refreshResult: Result<GitHubTokenGrant, DeviceFlowError>
   private(set) var authorizationRequestCount = 0
   private(set) var requestedClientIDs: [String] = []
   private(set) var requestedScopes: [[String]] = []
   private(set) var redeemedDeviceCodes: [String] = []
+  private(set) var refreshRequests: [RefreshRequest] = []
 
   init(
     outcomes: [DeviceAccessTokenOutcome],
     redeemError: (any Error)? = nil,
-    errorOnCallIndex: Int? = nil
+    errorOnCallIndex: Int? = nil,
+    refreshResult: Result<GitHubTokenGrant, DeviceFlowError> = .failure(.invalidResponse)
   ) {
     self.outcomes = outcomes
     self.redeemError = redeemError
     self.errorOnCallIndex = errorOnCallIndex
+    self.refreshResult = refreshResult
+  }
+
+  func refreshAccessToken(
+    clientID: String,
+    refreshToken: String
+  ) async throws -> GitHubTokenGrant {
+    refreshRequests.append(RefreshRequest(clientID: clientID, token: refreshToken))
+    return try refreshResult.get()
   }
 
   func requestDeviceAuthorization(

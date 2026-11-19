@@ -384,6 +384,267 @@ struct SettingsViewModelTests {
     #expect(badgeStore.savedValues == [.inbox])
   }
 
+  // MARK: - Expiring tokens
+
+  /// The clock every view model in this suite reads.
+  nonisolated private static let now = Date(timeIntervalSince1970: 1_793_000_000)
+
+  private static let renewedGrant = GitHubTokenGrant(
+    accessToken: "gho_new",
+    accessTokenLifetimeSeconds: 28_800,
+    refreshToken: "ghr_new"
+  )
+
+  private static func expiringCredential(expiresIn seconds: TimeInterval) -> GitHubCredential {
+    GitHubCredential(
+      accessToken: "gho_old",
+      accessTokenExpiresAt: now.addingTimeInterval(seconds),
+      refreshToken: "ghr_old"
+    )
+  }
+
+  @Test
+  func deviceFlowSignInStoresTheRefreshTokenAndExpiryGitHubIssued() async {
+    // The regression: sign-in kept only the access token, so eight hours
+    // later GitHub rejected it and nothing could renew it.
+    let tokenStore = TokenStoreSpy()
+    let viewModel = makeViewModel(
+      tokenStore: tokenStore,
+      deviceFlow: DeviceFlowAuthorizerStub(
+        grantResult: .success(
+          GitHubTokenGrant(
+            accessToken: "gho_issued",
+            accessTokenLifetimeSeconds: 28_800,
+            refreshToken: "ghr_issued"
+          )
+        )
+      )
+    )
+
+    await viewModel.signInWithDeviceFlow()
+
+    #expect(
+      tokenStore.savedCredentials == [
+        GitHubCredential(
+          accessToken: "gho_issued",
+          accessTokenExpiresAt: Self.now.addingTimeInterval(28_800),
+          refreshToken: "ghr_issued"
+        )
+      ]
+    )
+    #expect(viewModel.token == "gho_issued")
+  }
+
+  @Test
+  func anExpiringTokenIsRenewedBeforeUseAndTheRotatedPairIsStored() async {
+    let tokenStore = TokenStoreSpy(storedCredential: Self.expiringCredential(expiresIn: 300))
+    let refresher = TokenRefresherStub([.success(Self.renewedGrant)])
+    let viewModel = makeViewModel(tokenStore: tokenStore, tokenRefresher: refresher)
+
+    let accessToken = await viewModel.freshAccessToken()
+
+    #expect(accessToken == "gho_new")
+    #expect(viewModel.token == "gho_new")
+    #expect(viewModel.isSignedIn)
+    #expect(await refresher.refreshedTokens == ["ghr_old"])
+    #expect(tokenStore.savedCredentials == [Self.renewedGrant.credential(issuedAt: Self.now)])
+  }
+
+  @Test
+  func aTokenWellBeforeExpiryIsUsedWithoutARefresh() async {
+    let refresher = TokenRefresherStub()
+    let viewModel = makeViewModel(
+      tokenStore: TokenStoreSpy(storedCredential: Self.expiringCredential(expiresIn: 7_200)),
+      tokenRefresher: refresher
+    )
+
+    #expect(await viewModel.freshAccessToken() == "gho_old")
+    #expect(await refresher.refreshedTokens.isEmpty)
+  }
+
+  @Test
+  func aPastedPersonalAccessTokenIsNeverRefreshed() async {
+    let refresher = TokenRefresherStub()
+    let viewModel = makeViewModel(
+      tokenStore: TokenStoreSpy(storedToken: "github_pat_fine_grained"),
+      tokenRefresher: refresher
+    )
+
+    #expect(await viewModel.freshAccessToken() == "github_pat_fine_grained")
+    #expect(await refresher.refreshedTokens.isEmpty)
+  }
+
+  @Test
+  func concurrentRequestsShareOneRefreshBecauseARefreshTokenWorksOnlyOnce() async {
+    let refresher = ControlledTokenRefresher()
+    let viewModel = makeViewModel(
+      tokenStore: TokenStoreSpy(storedCredential: Self.expiringCredential(expiresIn: 60)),
+      tokenRefresher: refresher
+    )
+
+    let first = Task { @MainActor in
+      await viewModel.freshAccessToken()
+    }
+    await refresher.waitUntilPending()
+    let second = Task { @MainActor in
+      await viewModel.freshAccessToken()
+    }
+    // Let the second request reach the refresh before the first one ends.
+    for _ in 0..<10 {
+      await Task.yield()
+    }
+    #expect(await refresher.refreshedTokens == ["ghr_old"])
+
+    await refresher.finish(.success(Self.renewedGrant))
+
+    #expect(await first.value == "gho_new")
+    #expect(await second.value == "gho_new")
+    #expect(await refresher.refreshedTokens == ["ghr_old"])
+  }
+
+  @Test
+  func aRejectedRefreshTokenAsksForSignInAgainAndStopsRetrying() async {
+    let tokenStore = TokenStoreSpy(storedCredential: Self.expiringCredential(expiresIn: -60))
+    let refresher = TokenRefresherStub([.failure(DeviceFlowError.badRefreshToken)])
+    let viewModel = makeViewModel(tokenStore: tokenStore, tokenRefresher: refresher)
+
+    _ = await viewModel.freshAccessToken()
+    _ = await viewModel.freshAccessToken()
+
+    #expect(viewModel.isSignInExpired)
+    #expect(
+      viewModel.validationState
+        == .invalid(message: DeviceFlowError.badRefreshToken.localizedDescription)
+    )
+    // One request: a refused refresh token is refused every time.
+    #expect(await refresher.refreshedTokens == ["ghr_old"])
+    // Signing out stays the user's decision; nothing is deleted for them.
+    #expect(tokenStore.deleteCallCount == 0)
+    #expect(viewModel.isSignedIn)
+  }
+
+  @Test
+  func signingInAgainEndsAnExpiredSignIn() async {
+    let tokenStore = TokenStoreSpy(storedCredential: Self.expiringCredential(expiresIn: -60))
+    let viewModel = makeViewModel(
+      tokenStore: tokenStore,
+      deviceFlow: DeviceFlowAuthorizerStub(grantResult: .success(Self.renewedGrant)),
+      tokenRefresher: TokenRefresherStub([.failure(DeviceFlowError.badRefreshToken)])
+    )
+    _ = await viewModel.freshAccessToken()
+    #expect(viewModel.isSignInExpired)
+
+    await viewModel.signInWithDeviceFlow()
+
+    #expect(!viewModel.isSignInExpired)
+    #expect(viewModel.validationState == .valid(login: "octocat"))
+    #expect(await viewModel.freshAccessToken() == "gho_new")
+  }
+
+  @Test
+  func aNetworkFailureDuringRefreshKeepsTheCredentialAndTriesAgainNextTime() async {
+    let refresher = TokenRefresherStub([
+      .failure(URLError(.notConnectedToInternet)),
+      .success(Self.renewedGrant),
+    ])
+    let viewModel = makeViewModel(
+      tokenStore: TokenStoreSpy(storedCredential: Self.expiringCredential(expiresIn: 60)),
+      tokenRefresher: refresher
+    )
+
+    #expect(await viewModel.freshAccessToken() == "gho_old")
+    #expect(!viewModel.isSignInExpired)
+
+    #expect(await viewModel.freshAccessToken() == "gho_new")
+    #expect(await refresher.refreshedTokens == ["ghr_old", "ghr_old"])
+  }
+
+  @Test
+  func aRefreshThatLandsAfterSignOutIsDiscarded() async {
+    let tokenStore = TokenStoreSpy(storedCredential: Self.expiringCredential(expiresIn: 60))
+    let refresher = ControlledTokenRefresher()
+    let viewModel = makeViewModel(tokenStore: tokenStore, tokenRefresher: refresher)
+
+    let refresh = Task { @MainActor in
+      await viewModel.freshAccessToken()
+    }
+    await refresher.waitUntilPending()
+    viewModel.signOut()
+    await refresher.finish(.success(Self.renewedGrant))
+
+    #expect(await refresh.value.isEmpty)
+    #expect(tokenStore.savedCredentials.isEmpty)
+    #expect(viewModel.token.isEmpty)
+    #expect(!viewModel.isSignedIn)
+  }
+
+  @Test
+  func adoptsACredentialAnotherCopyOfTheAppAlreadyRenewed() async {
+    // An installed build and a development build share one Keychain item.
+    // Spending the refresh token the other copy already spent would be
+    // refused and look like an expired sign-in.
+    let tokenStore = TokenStoreSpy(storedCredential: Self.expiringCredential(expiresIn: 60))
+    let refresher = TokenRefresherStub()
+    let viewModel = makeViewModel(tokenStore: tokenStore, tokenRefresher: refresher)
+    tokenStore.replaceStoredCredential(
+      GitHubCredential(
+        accessToken: "gho_other_copy",
+        accessTokenExpiresAt: Self.now.addingTimeInterval(28_800),
+        refreshToken: "ghr_other_copy"
+      )
+    )
+
+    #expect(await viewModel.freshAccessToken() == "gho_other_copy")
+    #expect(viewModel.token == "gho_other_copy")
+    #expect(await refresher.refreshedTokens.isEmpty)
+  }
+
+  @Test
+  func aFailedKeychainWriteAfterARefreshStillUsesTheRenewedToken() async {
+    // GitHub retires the old pair the moment it issues the new one, so falling
+    // back to the old token would fail every request until relaunch.
+    let tokenStore = TokenStoreSpy(
+      storedCredential: Self.expiringCredential(expiresIn: 60),
+      failsToSave: true
+    )
+    let viewModel = makeViewModel(
+      tokenStore: tokenStore,
+      tokenRefresher: TokenRefresherStub([.success(Self.renewedGrant)])
+    )
+
+    #expect(await viewModel.freshAccessToken() == "gho_new")
+    #expect(viewModel.persistenceError != nil)
+  }
+
+  @Test
+  func aRefreshLeavesAReplacementTokenTheUserIsTypingAlone() async {
+    let viewModel = makeViewModel(
+      tokenStore: TokenStoreSpy(storedCredential: Self.expiringCredential(expiresIn: 60)),
+      tokenRefresher: TokenRefresherStub([.success(Self.renewedGrant)])
+    )
+    viewModel.token = "github_pat_half_typ"
+
+    // Requests use the stored credential, never an unsaved draft.
+    #expect(await viewModel.freshAccessToken() == "gho_new")
+    #expect(viewModel.token == "github_pat_half_typ")
+  }
+
+  @Test
+  func openingSettingsWithAnExpiredSignInSaysSoInsteadOfAGenericRejection() async {
+    let viewModel = makeViewModel(
+      tokenStore: TokenStoreSpy(storedCredential: Self.expiringCredential(expiresIn: -60)),
+      validator: TokenValidatorStub(result: .success("octocat")),
+      tokenRefresher: TokenRefresherStub([.failure(DeviceFlowError.badRefreshToken)])
+    )
+
+    await viewModel.refreshSignInState()
+
+    #expect(
+      viewModel.validationState
+        == .invalid(message: DeviceFlowError.badRefreshToken.localizedDescription)
+    )
+  }
+
   private func makeViewModel(
     tokenStore: TokenStoreSpy = TokenStoreSpy(),
     validator: any GitHubTokenValidating = TokenValidatorStub(result: .success("octocat")),
@@ -392,6 +653,7 @@ struct SettingsViewModelTests {
     deviceFlow: any DeviceFlowAuthorizing = DeviceFlowAuthorizerStub(
       tokenResult: .success("gho_test")
     ),
+    tokenRefresher: any GitHubTokenRefreshing = TokenRefresherStub(),
     verificationPageOpener: @escaping @MainActor @Sendable (URL) -> Void = { _ in },
     onSignOut: @escaping @MainActor () -> Void = {}
   ) -> SettingsViewModel {
@@ -401,6 +663,8 @@ struct SettingsViewModelTests {
       launchAtLoginController: launchController,
       badgePreferenceStore: badgeStore,
       deviceFlow: deviceFlow,
+      tokenRefresher: tokenRefresher,
+      now: { Self.now },
       verificationPageOpener: verificationPageOpener,
       onSignOut: onSignOut
     )
@@ -427,12 +691,20 @@ private final class VerificationPageOpenerSpy {
 
 private actor DeviceFlowAuthorizerStub: DeviceFlowAuthorizing {
   private let available: Bool
-  private let tokenResult: Result<String, any Error>
+  private let grantResult: Result<GitHubTokenGrant, any Error>
   private(set) var authorizationRequestCount = 0
 
+  /// A grant with a bare token: what an OAuth App without token expiration issues.
   init(isAvailable: Bool = true, tokenResult: Result<String, any Error>) {
+    self.init(
+      isAvailable: isAvailable,
+      grantResult: tokenResult.map { GitHubTokenGrant(accessToken: $0) }
+    )
+  }
+
+  init(isAvailable: Bool = true, grantResult: Result<GitHubTokenGrant, any Error>) {
     self.available = isAvailable
-    self.tokenResult = tokenResult
+    self.grantResult = grantResult
   }
 
   nonisolated var isAvailable: Bool {
@@ -444,8 +716,8 @@ private actor DeviceFlowAuthorizerStub: DeviceFlowAuthorizing {
     return ControlledDeviceFlowAuthorizer.authorization
   }
 
-  func waitForAccessToken(authorization: DeviceAuthorization) async throws -> String {
-    try tokenResult.get()
+  func waitForAccessToken(authorization: DeviceAuthorization) async throws -> GitHubTokenGrant {
+    try grantResult.get()
   }
 }
 
@@ -460,7 +732,7 @@ private actor ControlledDeviceFlowAuthorizer: DeviceFlowAuthorizing {
     pollIntervalSeconds: 5
   )
 
-  private var pending: CheckedContinuation<String, any Error>?
+  private var pending: CheckedContinuation<GitHubTokenGrant, any Error>?
   private var pollingWaiters: [CheckedContinuation<Void, Never>] = []
 
   nonisolated var isAvailable: Bool {
@@ -471,7 +743,7 @@ private actor ControlledDeviceFlowAuthorizer: DeviceFlowAuthorizing {
     Self.authorization
   }
 
-  func waitForAccessToken(authorization: DeviceAuthorization) async throws -> String {
+  func waitForAccessToken(authorization: DeviceAuthorization) async throws -> GitHubTokenGrant {
     try await withCheckedThrowingContinuation { continuation in
       pending = continuation
       for waiter in pollingWaiters {
@@ -495,7 +767,7 @@ private actor ControlledDeviceFlowAuthorizer: DeviceFlowAuthorizing {
       preconditionFailure("No pending device-flow poll")
     }
     pending = nil
-    continuation.resume(with: result)
+    continuation.resume(with: result.map { GitHubTokenGrant(accessToken: $0) })
   }
 }
 
@@ -510,22 +782,38 @@ private final class SignOutSpy {
 
 private final class TokenStoreSpy: TokenStoring, @unchecked Sendable {
   private let lock = NSLock()
-  private var storedToken: String?
-  private var mutableSavedTokens: [String] = []
+  private var storedCredential: GitHubCredential?
+  private var mutableSavedCredentials: [GitHubCredential] = []
   private var mutableDeleteCallCount = 0
   private let failsToSave: Bool
   private let failsToDelete: Bool
 
-  init(storedToken: String? = nil, failsToSave: Bool = false, failsToDelete: Bool = false) {
-    self.storedToken = storedToken
+  convenience init(storedToken: String?, failsToSave: Bool = false, failsToDelete: Bool = false) {
+    self.init(
+      storedCredential: storedToken.map { GitHubCredential(accessToken: $0) },
+      failsToSave: failsToSave,
+      failsToDelete: failsToDelete
+    )
+  }
+
+  init(
+    storedCredential: GitHubCredential? = nil,
+    failsToSave: Bool = false,
+    failsToDelete: Bool = false
+  ) {
+    self.storedCredential = storedCredential
     self.failsToSave = failsToSave
     self.failsToDelete = failsToDelete
   }
 
-  var savedTokens: [String] {
+  var savedCredentials: [GitHubCredential] {
     lock.withLock {
-      mutableSavedTokens
+      mutableSavedCredentials
     }
+  }
+
+  var savedTokens: [String] {
+    savedCredentials.map(\.accessToken)
   }
 
   var deleteCallCount: Int {
@@ -534,30 +822,91 @@ private final class TokenStoreSpy: TokenStoring, @unchecked Sendable {
     }
   }
 
-  func loadToken() throws -> String? {
+  /// Stands in for another copy of the app writing the shared Keychain item.
+  func replaceStoredCredential(_ credential: GitHubCredential?) {
     lock.withLock {
-      storedToken
+      storedCredential = credential
     }
   }
 
-  func saveToken(_ token: String) throws {
+  func loadCredential() throws -> GitHubCredential? {
+    lock.withLock {
+      storedCredential
+    }
+  }
+
+  func saveCredential(_ credential: GitHubCredential) throws {
     if failsToSave {
       throw KeychainError(status: errSecIO)
     }
     lock.withLock {
-      storedToken = token
-      mutableSavedTokens.append(token)
+      storedCredential = credential
+      mutableSavedCredentials.append(credential)
     }
   }
 
-  func deleteToken() throws {
+  func deleteCredential() throws {
     if failsToDelete {
       throw KeychainError(status: errSecIO)
     }
     lock.withLock {
-      storedToken = nil
+      storedCredential = nil
       mutableDeleteCallCount += 1
     }
+  }
+}
+
+private actor TokenRefresherStub: GitHubTokenRefreshing {
+  private var results: [Result<GitHubTokenGrant, any Error>]
+  private(set) var refreshedTokens: [String] = []
+
+  init(_ results: [Result<GitHubTokenGrant, any Error>] = []) {
+    self.results = results
+  }
+
+  func refreshAccessToken(refreshToken: String) async throws -> GitHubTokenGrant {
+    refreshedTokens.append(refreshToken)
+    guard !results.isEmpty else {
+      Issue.record("Unexpected refresh with \(refreshToken)")
+      throw DeviceFlowError.invalidResponse
+    }
+    return try results.removeFirst().get()
+  }
+}
+
+/// Holds every refresh open until the test finishes them, so a test can act
+/// while a refresh is in flight.
+private actor ControlledTokenRefresher: GitHubTokenRefreshing {
+  private(set) var refreshedTokens: [String] = []
+  private var pending: [CheckedContinuation<GitHubTokenGrant, any Error>] = []
+  private var waiters: [CheckedContinuation<Void, Never>] = []
+
+  func refreshAccessToken(refreshToken: String) async throws -> GitHubTokenGrant {
+    refreshedTokens.append(refreshToken)
+    return try await withCheckedThrowingContinuation { continuation in
+      pending.append(continuation)
+      for waiter in waiters {
+        waiter.resume()
+      }
+      waiters = []
+    }
+  }
+
+  func waitUntilPending() async {
+    guard pending.isEmpty else {
+      return
+    }
+    await withCheckedContinuation { continuation in
+      waiters.append(continuation)
+    }
+  }
+
+  func finish(_ result: Result<GitHubTokenGrant, any Error>) {
+    precondition(!pending.isEmpty, "No pending refresh")
+    for continuation in pending {
+      continuation.resume(with: result)
+    }
+    pending = []
   }
 }
 

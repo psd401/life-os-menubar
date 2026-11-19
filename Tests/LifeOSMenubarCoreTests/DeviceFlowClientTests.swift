@@ -61,7 +61,130 @@ struct DeviceFlowClientTests {
       deviceCode: "dc-1"
     )
 
-    #expect(outcome == .authorized(token: "gho_test"))
+    // No expires_in and no refresh_token: a token that does not expire.
+    #expect(outcome == .authorized(GitHubTokenGrant(accessToken: "gho_test")))
+  }
+
+  @Test
+  func redeemKeepsTheRefreshTokenAndLifetimeOfAnExpiringToken() async throws {
+    // What GitHub sends once the OAuth App has token expiration on, which is
+    // the default for every OAuth App registered since 2026-08-14. Dropping
+    // the refresh token here is what made every sign-in last eight hours.
+    URLProtocolStub.handler = { request in
+      (
+        try response(for: request, statusCode: 200),
+        Data(
+          """
+          {"access_token":"gho_test","expires_in":28800,"refresh_token":"ghr_test",\
+          "refresh_token_expires_in":15897600,"token_type":"bearer",\
+          "scope":"repo,read:project"}
+          """.utf8)
+      )
+    }
+
+    let outcome = try await makeClient().redeemAccessToken(
+      clientID: "test-client-id",
+      deviceCode: "dc-1"
+    )
+
+    #expect(
+      outcome
+        == .authorized(
+          GitHubTokenGrant(
+            accessToken: "gho_test",
+            accessTokenLifetimeSeconds: 28_800,
+            refreshToken: "ghr_test"
+          )
+        )
+    )
+  }
+
+  @Test
+  func refreshSendsTheRefreshTokenGrantWithoutAClientSecret() async throws {
+    URLProtocolStub.handler = { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.url?.path == "/login/oauth/access_token")
+      #expect(request.value(forHTTPHeaderField: "Accept") == "application/json")
+
+      let form = try formFields(from: request)
+      #expect(form["client_id"] == "test-client-id")
+      #expect(form["grant_type"] == "refresh_token")
+      #expect(form["refresh_token"] == "ghr_old")
+      // A device-flow token is refreshed without the client secret, which a
+      // native app has no way to keep secret anyway.
+      #expect(form["client_secret"] == nil)
+
+      return (
+        try response(for: request, statusCode: 200),
+        Data(
+          """
+          {"access_token":"gho_new","expires_in":28800,"refresh_token":"ghr_new",\
+          "refresh_token_expires_in":15897600,"token_type":"bearer","scope":""}
+          """.utf8)
+      )
+    }
+
+    let grant = try await makeClient().refreshAccessToken(
+      clientID: "test-client-id",
+      refreshToken: "ghr_old"
+    )
+
+    #expect(
+      grant
+        == GitHubTokenGrant(
+          accessToken: "gho_new",
+          accessTokenLifetimeSeconds: 28_800,
+          refreshToken: "ghr_new"
+        )
+    )
+  }
+
+  @Test(arguments: [200, 400])
+  func refreshMapsARejectedRefreshTokenToAnExpiredSignIn(statusCode: Int) async {
+    URLProtocolStub.handler = { request in
+      (
+        try response(for: request, statusCode: statusCode),
+        Data(
+          #"{"error":"bad_refresh_token","error_description":"The refresh token is invalid."}"#
+            .utf8
+        )
+      )
+    }
+
+    await #expect(throws: DeviceFlowError.badRefreshToken) {
+      try await makeClient().refreshAccessToken(
+        clientID: "test-client-id",
+        refreshToken: "ghr_spent"
+      )
+    }
+  }
+
+  @Test
+  func refreshReportsAServerErrorWithoutAnOAuthErrorAsAFailedRequest() async {
+    URLProtocolStub.handler = { request in
+      (try response(for: request, statusCode: 502), Data("<html>Bad gateway</html>".utf8))
+    }
+
+    await #expect(throws: DeviceFlowError.requestFailed(statusCode: 502)) {
+      try await makeClient().refreshAccessToken(
+        clientID: "test-client-id",
+        refreshToken: "ghr_old"
+      )
+    }
+  }
+
+  @Test
+  func refreshRejectsASuccessResponseWithNoAccessToken() async {
+    URLProtocolStub.handler = { request in
+      (try response(for: request, statusCode: 200), Data(#"{"token_type":"bearer"}"#.utf8))
+    }
+
+    await #expect(throws: DeviceFlowError.invalidResponse) {
+      try await makeClient().refreshAccessToken(
+        clientID: "test-client-id",
+        refreshToken: "ghr_old"
+      )
+    }
   }
 
   @Test
