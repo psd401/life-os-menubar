@@ -6,12 +6,12 @@ import SwiftUI
 @MainActor
 final class QuickCaptureWindowController: NSWindowController, NSWindowDelegate {
   private let viewModel: QuickCaptureViewModel
-  private let tokenProvider: @MainActor () -> String
+  private let tokenProvider: @MainActor () async -> String
   private let onCreated: (LifeOSIssue) -> Void
 
   init(
     viewModel: QuickCaptureViewModel,
-    tokenProvider: @escaping @MainActor () -> String,
+    tokenProvider: @escaping @MainActor () async -> String,
     onCreated: @escaping (LifeOSIssue) -> Void
   ) {
     self.viewModel = viewModel

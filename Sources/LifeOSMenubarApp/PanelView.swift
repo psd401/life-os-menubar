@@ -23,7 +23,9 @@ struct PanelView: View {
       } else if let selectedIssue {
         TaskDetailView(
           issue: selectedIssue,
-          token: settingsViewModel.token,
+          tokenProvider: {
+            await settingsViewModel.freshAccessToken()
+          },
           availableLabels: taskListViewModel.issues.flatMap(\.labels),
           onBack: {
             self.selectedIssue = nil
@@ -88,7 +90,7 @@ struct PanelView: View {
       QuickAddComposerView(
         viewModel: quickAddViewModel,
         tokenProvider: {
-          settingsViewModel.token
+          await settingsViewModel.freshAccessToken()
         },
         onCreated: { createdIssue in
           taskListViewModel.reconcileRemoteIssue(createdIssue)
@@ -194,7 +196,7 @@ struct PanelView: View {
     HStack(spacing: NexusSpace.s3) {
       Button {
         Task {
-          await taskListViewModel.refresh(token: settingsViewModel.token)
+          await taskListViewModel.refresh(token: settingsViewModel.freshAccessToken())
         }
       } label: {
         Label("Refresh tasks", systemImage: "arrow.clockwise")
@@ -289,7 +291,7 @@ private struct QuickAddComposerView: View {
   @FocusState private var isTitleFocused: Bool
   @State private var createdIssueNumber: Int?
 
-  let tokenProvider: @MainActor () -> String
+  let tokenProvider: @MainActor () async -> String
   let onCreated: (LifeOSIssue) -> Void
 
   var body: some View {

@@ -47,11 +47,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
           return
         }
         taskListViewModel.resetForRepositoryChange()
-        guard let token = self?.settingsViewModel?.token, !token.isEmpty else {
+        guard let settingsViewModel = self?.settingsViewModel, settingsViewModel.isSignedIn else {
           return
         }
         Task {
-          await taskListViewModel.refresh(token: token)
+          await taskListViewModel.refresh(token: settingsViewModel.freshAccessToken())
         }
       }
     )
@@ -67,12 +67,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let quickCaptureWindowController = QuickCaptureWindowController(
       viewModel: QuickCaptureViewModel(client: issueCreationClient),
       tokenProvider: {
-        settingsViewModel.token
+        await settingsViewModel.freshAccessToken()
       },
       onCreated: { issue in
         taskListViewModel.reconcileRemoteIssue(issue)
         Task {
-          await taskListViewModel.refresh(token: settingsViewModel.token)
+          await taskListViewModel.refresh(token: settingsViewModel.freshAccessToken())
         }
       }
     )
@@ -101,7 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       onPanelOpen: {
         quickAddViewModel.requestTitleFocus()
         Task {
-          await taskListViewModel.refresh(token: settingsViewModel.token)
+          await taskListViewModel.refresh(token: settingsViewModel.freshAccessToken())
         }
       }
     )
@@ -110,11 +110,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       quickCaptureWindowController?.showCapture()
     }
 
+    // Every request path asks for a fresh token rather than reading
+    // `settingsViewModel.token`: with token expiration on, GitHub rejects an
+    // access token eight hours after issuing it, and asking renews it first.
     taskListViewModel.startBackgroundRefresh {
-      settingsViewModel.token
+      await settingsViewModel.freshAccessToken()
     }
     Task {
-      await taskListViewModel.refresh(token: settingsViewModel.token)
+      await taskListViewModel.refresh(token: settingsViewModel.freshAccessToken())
     }
   }
 
