@@ -60,7 +60,7 @@ Resources/Info.plist         → LSUIElement = true (accessory app, no Dock icon
 
 | Layer | Files | Role |
 |-------|-------|------|
-| Model | `LifeOSIssue`, `IssueDetail`, `ProjectFields`, `TaskFilter`, `LabelRules`, `TaskRepository` | Value types + the label-contract rules (one `status:*`, one `priority:*`) and the required-label list |
+| Model | `LifeOSIssue`, `IssueDetail`, `ProjectFields`, `TaskFilter`, `LabelRules`, `TaskRepository`, `GitHubCredential` | Value types + the label-contract rules (one `status:*`, one `priority:*`) and the required-label list |
 | Clients | `GitHubIssueClient`, `GitHubIssueDetailClient`, `GitHubIssueMutationClient`, `GitHubProjectFieldClient`, `GitHubTokenValidator`, `TaskRepositoryValidator` | GitHub I/O. Reads use GraphQL; mutations use REST. Each is behind a protocol so tests inject a fake |
 | Sync / storage | `IssueSyncEngine` (actor), `IssueCacheStore`, `TaskFilterStore`, `KeychainTokenStore`, `UserDefaultsTaskRepositoryStore`, `UserDefaultsMenuBarCountPreferenceStore`, `LaunchAtLoginController` | Watermarked delta sync with a ≥24h full reconcile; JSON caches in Application Support; token in the Keychain; repo slug in `UserDefaults` |
 | View models | `TaskListViewModel`, `TaskDetailViewModel`, `SettingsViewModel`, `QuickCaptureViewModel` | `@MainActor` observable state the views bind to |
