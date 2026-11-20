@@ -184,10 +184,11 @@ the table in front of you rather than taking the default blind.
 | What it grants | Classic scopes `repo` and `read:project`. | Exactly what you scope the token to. |
 | Breadth | **Broad.** `repo` grants **read and write on every repository your GitHub account can reach** — public, private, and every organization repository your account has access to. There is no narrower classic scope that can read and write issues on a private repo. | **Narrow.** Scope it to **Issues: read and write** on your one task repository and the app can do nothing else, anywhere. |
 | Today view and the Today menu bar count | Works. `read:project` reaches your user-owned Project v2 dates. | **Off.** Fine-grained tokens expose Projects as an organization-only permission, so a user-owned project is unreachable. Settings says so; everything else works. |
-| Expiry | None. OAuth App tokens do not expire. | Whatever expiry you set on the token. |
+| Expiry | The access token lasts 8 hours. The app renews it with the refresh token GitHub issues alongside it, so you stay signed in. You sign in again only if the refresh token goes unused for six months or is revoked. | Whatever expiry you set on the token. The app cannot renew it. |
 
-Both paths end in the same place: the token goes into the macOS Keychain
-(`KeychainTokenStore`) and nowhere else. **Sign out** in Settings removes the
+Both paths end in the same place: the credential goes into the macOS Keychain
+(`KeychainTokenStore`) and nowhere else. For a sign-in, that credential is the
+access token, its expiry, and the refresh token. **Sign out** in Settings removes the
 Keychain item. A token saved by an earlier version of the app keeps working
 after an update — there is no forced re-authentication — until you sign out.
 

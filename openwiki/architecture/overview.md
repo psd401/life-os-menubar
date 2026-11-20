@@ -88,7 +88,7 @@ returns `false` so closing the panel does not quit.
 |------|-----------|----------|
 | `~/Library/Application Support/LifeOSMenubar/issues.json` | `IssueCacheStore` | The task cache snapshot and sync watermarks |
 | `~/Library/Application Support/LifeOSMenubar/filters.json` | `TaskFilterStore` | Active and saved filters |
-| macOS Keychain, service `com.krishagel.LifeOSMenubar` | `KeychainTokenStore` | The GitHub token — **nowhere else** |
+| macOS Keychain, service `com.krishagel.LifeOSMenubar` | `KeychainTokenStore` | The GitHub credential (access token, plus expiry and refresh token for a sign-in) — **nowhere else** |
 
 All of it is reconstructible from the task repo plus a token. Nothing here is a
 system of record.

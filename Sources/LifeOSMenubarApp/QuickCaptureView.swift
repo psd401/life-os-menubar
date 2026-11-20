@@ -14,7 +14,7 @@ struct QuickCaptureView: View {
   @Environment(\.nexus) private var palette
   @FocusState private var focusedField: Field?
 
-  let tokenProvider: @MainActor () -> String
+  let tokenProvider: @MainActor () async -> String
   let cancel: () -> Void
   let created: (LifeOSIssue) -> Void
 

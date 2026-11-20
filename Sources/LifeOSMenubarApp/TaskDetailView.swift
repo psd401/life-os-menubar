@@ -7,14 +7,16 @@ struct TaskDetailView: View {
   @Environment(\.nexus) private var palette
   @State private var showsCloseConfirmation = false
 
-  let token: String
+  /// Asked on every request rather than captured once: the detail view can
+  /// stay open past the access token's expiry, and asking renews it.
+  let tokenProvider: @MainActor () async -> String
   let availableLabels: [GitHubLabel]
   let onBack: () -> Void
   let onIssueUpdated: (LifeOSIssue) -> Void
 
   init(
     issue: LifeOSIssue,
-    token: String,
+    tokenProvider: @escaping @MainActor () async -> String,
     availableLabels: [GitHubLabel],
     detailClient: any GitHubIssueDetailFetching = GitHubGraphQLIssueDetailClient(),
     mutationClient: any GitHubIssueMutating = GitHubRESTIssueClient(),
@@ -28,7 +30,7 @@ struct TaskDetailView: View {
         mutationClient: mutationClient
       )
     )
-    self.token = token
+    self.tokenProvider = tokenProvider
     self.availableLabels = availableLabels
     self.onBack = onBack
     self.onIssueUpdated = onIssueUpdated
@@ -65,7 +67,7 @@ struct TaskDetailView: View {
     ) {
       Button("Mark task done and close it", role: .destructive) {
         Task {
-          if let updatedIssue = await viewModel.close(token: token) {
+          if let updatedIssue = await viewModel.close(token: tokenProvider()) {
             onIssueUpdated(updatedIssue)
             onBack()
           }
@@ -157,7 +159,7 @@ struct TaskDetailView: View {
             Button {
               Task {
                 if let updatedIssue = await viewModel.changeStatus(
-                  token: token,
+                  token: tokenProvider(),
                   to: status.labelName
                 ) {
                   onIssueUpdated(updatedIssue)
@@ -184,7 +186,7 @@ struct TaskDetailView: View {
             Button {
               Task {
                 if let updatedIssue = await viewModel.changePriority(
-                  token: token,
+                  token: tokenProvider(),
                   to: priority
                 ) {
                   onIssueUpdated(updatedIssue)
@@ -215,7 +217,7 @@ struct TaskDetailView: View {
                 Task {
                   let isSelected = !viewModel.issue.labels.contains { $0.name == label.name }
                   if let updatedIssue = await viewModel.setNonContractLabel(
-                    token: token,
+                    token: tokenProvider(),
                     label: label.name,
                     isSelected: isSelected
                   ) {
@@ -347,7 +349,7 @@ struct TaskDetailView: View {
 
       Button("Post comment") {
         Task {
-          _ = await viewModel.addComment(token: token)
+          _ = await viewModel.addComment(token: tokenProvider())
         }
       }
       .buttonStyle(.borderedProminent)
@@ -429,7 +431,7 @@ struct TaskDetailView: View {
   }
 
   private func loadDetail() async {
-    await viewModel.load(token: token)
+    await viewModel.load(token: tokenProvider())
     if viewModel.errorMessage == nil {
       onIssueUpdated(viewModel.issue)
     }

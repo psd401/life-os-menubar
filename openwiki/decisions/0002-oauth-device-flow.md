@@ -4,8 +4,21 @@ okf_version: "0.1"
 
 # 0002 — OAuth device flow by default, token entry as the advanced path
 
-**Date:** 2026-10-31 · **Amended:** 2026-11-01 · **Status:** Accepted,
+**Date:** 2026-10-31 · **Amended:** 2026-11-01, 2026-11-19 · **Status:** Accepted,
 implemented ([#18](https://github.com/psd401/life-os-menubar/issues/18))
+
+> **Amended 2026-11-19 — device-flow tokens expire.** The "no refresh
+> machinery" consequence below was wrong when it shipped. Since GitHub's
+> [2026-08-14 change](https://github.blog/changelog/2026-08-14-multiple-redirect-uris-and-token-refresh-for-oauth-apps/),
+> token expiration is on by default for every new OAuth App, and the psd401
+> "Life OS Menubar" app (registered 2026-11-01) has it on: each sign-in returns
+> an access token that lasts 8 hours plus a refresh token. The app kept only
+> the access token, so every sign-in stopped working 8 hours later with
+> "GitHub rejected this token" while Settings still showed it signed in. The
+> app now stores the refresh token and renews the access token before it
+> expires. Opting the OAuth App out of expiration was rejected: it would leave
+> a non-expiring token with the `repo` scope in the Keychain, and GitHub is
+> moving every integration toward expiring tokens.
 
 > **Amended 2026-11-01.** The original decision removed token entry outright.
 > It is kept, as a deliberately advanced least-privilege path, because a
@@ -82,10 +95,20 @@ standard 04 rule 15a does not apply to it.
   bearer string, so a stored credential stays valid until the user signs out.
   This is why `SettingsViewModel.isSignedIn` keys off "a credential is stored"
   rather than "the device flow produced one".
-- **No refresh machinery.** OAuth App tokens — unlike GitHub App user tokens —
-  do not expire, so the app needs no refresh path and no "re-auth required"
-  state beyond the existing "token invalid" error. This replaces the original
-  decision's expectation that expiry would become a state to handle.
+- **Refresh, single-flight.** *(Amended 2026-11-19; the original said OAuth
+  App tokens do not expire and no refresh path was needed.)* A device-flow
+  sign-in stores the access token, its expiry, and the refresh token as one
+  Keychain item. Every request asks `SettingsViewModel.freshAccessToken()`,
+  which renews the token when it is within 15 minutes of expiry. That is longer
+  than the 5-minute background refresh, so an awake app renews before any
+  request can find the token expired. A refresh token works once, so one
+  refresh runs at a time and concurrent requests wait for it. Before spending
+  the refresh token, the app re-reads the Keychain item, because another copy
+  of the app (a development build, say) may already have renewed it. If GitHub
+  refuses the refresh token (`bad_refresh_token`, after six months unused or a
+  revocation), Settings says "sign in again". A network failure keeps the
+  credential, and the app retries on the next request. A pasted personal access
+  token has no refresh token and is never refreshed.
 - **Two support paths, not one.** The `read:project` remediation message earns
   its keep: it is now the expected steady state of the advanced path, not just a
   misconfiguration.
@@ -95,4 +118,7 @@ standard 04 rule 15a does not apply to it.
   is false, Settings disables sign-in and says why, and token entry is the only
   path. The registration steps are in the README.
 - `KeychainTokenStore` stays the only persistence for the credential; this
-  decision changes how the token is *obtained*, not where it lives.
+  decision changes how the token is *obtained*, not where it lives. The item
+  now holds versioned JSON (access token, expiry, refresh token). A bare token
+  string written by an earlier version still reads as a non-expiring
+  credential.

@@ -69,7 +69,7 @@ public struct DeviceAuthorization: Equatable, Sendable {
 /// One non-terminal result of polling the access-token endpoint. Every other
 /// documented response is a `DeviceFlowError`.
 public enum DeviceAccessTokenOutcome: Equatable, Sendable {
-  case authorized(token: String)
+  case authorized(GitHubTokenGrant)
   case authorizationPending
   case slowDown(pollIntervalSeconds: Int)
 }
@@ -82,6 +82,7 @@ public enum DeviceFlowError: LocalizedError, Equatable, Sendable {
   case incorrectClientCredentials
   case incorrectDeviceCode
   case unsupportedGrantType
+  case badRefreshToken
   case invalidResponse
   case requestFailed(statusCode: Int)
   case unexpected(code: String, description: String?)
@@ -104,6 +105,8 @@ public enum DeviceFlowError: LocalizedError, Equatable, Sendable {
       "GitHub rejected this sign-in code. Sign in again to get a new code."
     case .unsupportedGrantType:
       "GitHub rejected the device-flow grant type."
+    case .badRefreshToken:
+      "Your GitHub sign-in has expired. Sign in with GitHub again."
     case .invalidResponse:
       "GitHub returned an invalid response."
     case .requestFailed(let statusCode):
@@ -113,7 +116,8 @@ public enum DeviceFlowError: LocalizedError, Equatable, Sendable {
     }
   }
 
-  /// Maps a documented `error` code from either device-flow endpoint.
+  /// Maps a documented `error` code from either device-flow endpoint, or from
+  /// a refresh, which uses the same access-token endpoint.
   static func forCode(_ code: String, description: String?) -> DeviceFlowError {
     switch code {
     case "expired_token": .expiredCode
@@ -122,6 +126,7 @@ public enum DeviceFlowError: LocalizedError, Equatable, Sendable {
     case "incorrect_client_credentials": .incorrectClientCredentials
     case "incorrect_device_code": .incorrectDeviceCode
     case "unsupported_grant_type": .unsupportedGrantType
+    case "bad_refresh_token": .badRefreshToken
     default: .unexpected(code: code, description: description)
     }
   }
@@ -139,6 +144,14 @@ public protocol DeviceFlowRequesting: Sendable {
     clientID: String,
     deviceCode: String
   ) async throws -> DeviceAccessTokenOutcome
+
+  /// Trades a refresh token for a new access token and refresh token. GitHub
+  /// retires the refresh token it was given, and the access token that came
+  /// with it, as soon as it answers.
+  func refreshAccessToken(
+    clientID: String,
+    refreshToken: String
+  ) async throws -> GitHubTokenGrant
 }
 
 public struct GitHubDeviceFlowClient: DeviceFlowRequesting {
@@ -222,16 +235,64 @@ public struct GitHubDeviceFlowClient: DeviceFlowRequesting {
       }
     }
 
-    guard let token = payload.accessToken, !token.isEmpty else {
+    guard let grant = payload.grant else {
       throw DeviceFlowError.invalidResponse
     }
-    return .authorized(token: token)
+    return .authorized(grant)
+  }
+
+  public func refreshAccessToken(
+    clientID: String,
+    refreshToken: String
+  ) async throws -> GitHubTokenGrant {
+    // A device-flow token refreshes without `client_secret`, which a native
+    // app could not keep secret anyway.
+    let (httpResponse, data) = try await send(
+      to: accessTokenEndpoint,
+      fields: [
+        "client_id": clientID,
+        "grant_type": "refresh_token",
+        "refresh_token": refreshToken,
+      ]
+    )
+    let payload = try? JSONDecoder().decode(AccessTokenResponse.self, from: data)
+
+    // The OAuth error decides before the status code does. A spent or expired
+    // refresh token has to read as "sign in again", not as a retryable HTTP
+    // failure, or the app would retry a dead token forever without telling
+    // the user.
+    if let code = payload?.error {
+      throw DeviceFlowError.forCode(code, description: payload?.errorDescription)
+    }
+    guard httpResponse.statusCode == 200 else {
+      throw DeviceFlowError.requestFailed(statusCode: httpResponse.statusCode)
+    }
+    guard let grant = payload?.grant else {
+      throw DeviceFlowError.invalidResponse
+    }
+    return grant
   }
 
   private func post<Response: Decodable>(
     to endpoint: URL,
     fields: [String: String]
   ) async throws -> Response {
+    let (httpResponse, data) = try await send(to: endpoint, fields: fields)
+    guard httpResponse.statusCode == 200 else {
+      throw DeviceFlowError.requestFailed(statusCode: httpResponse.statusCode)
+    }
+
+    do {
+      return try JSONDecoder().decode(Response.self, from: data)
+    } catch {
+      throw DeviceFlowError.invalidResponse
+    }
+  }
+
+  private func send(
+    to endpoint: URL,
+    fields: [String: String]
+  ) async throws -> (HTTPURLResponse, Data) {
     var request = URLRequest(url: endpoint)
     request.httpMethod = "POST"
     // Without this header GitHub answers with a form-encoded body.
@@ -246,15 +307,7 @@ public struct GitHubDeviceFlowClient: DeviceFlowRequesting {
     guard let httpResponse = response as? HTTPURLResponse else {
       throw DeviceFlowError.invalidResponse
     }
-    guard httpResponse.statusCode == 200 else {
-      throw DeviceFlowError.requestFailed(statusCode: httpResponse.statusCode)
-    }
-
-    do {
-      return try JSONDecoder().decode(Response.self, from: data)
-    } catch {
-      throw DeviceFlowError.invalidResponse
-    }
+    return (httpResponse, data)
   }
 
   private static func formEncoded(_ fields: [String: String]) -> String {
@@ -294,15 +347,34 @@ private struct DeviceCodeResponse: Decodable {
 
 private struct AccessTokenResponse: Decodable {
   let accessToken: String?
+  /// Present only when the OAuth App has token expiration on.
+  let expiresIn: Int?
+  let refreshToken: String?
   let interval: Int?
   let error: String?
   let errorDescription: String?
 
   enum CodingKeys: String, CodingKey {
     case accessToken = "access_token"
+    case expiresIn = "expires_in"
+    case refreshToken = "refresh_token"
     case interval
     case error
     case errorDescription = "error_description"
+  }
+
+  /// Everything GitHub issued, or nil without an access token. The refresh
+  /// token is the part an earlier version dropped, which left every sign-in
+  /// good for eight hours.
+  var grant: GitHubTokenGrant? {
+    guard let accessToken, !accessToken.isEmpty else {
+      return nil
+    }
+    return GitHubTokenGrant(
+      accessToken: accessToken,
+      accessTokenLifetimeSeconds: expiresIn,
+      refreshToken: refreshToken.flatMap { $0.isEmpty ? nil : $0 }
+    )
   }
 }
 
@@ -325,10 +397,15 @@ public protocol DeviceFlowAuthorizing: Sendable {
   /// False when this build has no OAuth App client ID.
   var isAvailable: Bool { get }
   func requestAuthorization() async throws -> DeviceAuthorization
-  func waitForAccessToken(authorization: DeviceAuthorization) async throws -> String
+  func waitForAccessToken(authorization: DeviceAuthorization) async throws -> GitHubTokenGrant
 }
 
-public struct GitHubDeviceFlowAuthorizer: DeviceFlowAuthorizing {
+/// Renews an expiring access token with its refresh token.
+public protocol GitHubTokenRefreshing: Sendable {
+  func refreshAccessToken(refreshToken: String) async throws -> GitHubTokenGrant
+}
+
+public struct GitHubDeviceFlowAuthorizer: DeviceFlowAuthorizing, GitHubTokenRefreshing {
   private let clientID: String
   private let scopes: [String]
   private let client: any DeviceFlowRequesting
@@ -357,7 +434,9 @@ public struct GitHubDeviceFlowAuthorizer: DeviceFlowAuthorizing {
     return try await client.requestDeviceAuthorization(clientID: clientID, scopes: scopes)
   }
 
-  public func waitForAccessToken(authorization: DeviceAuthorization) async throws -> String {
+  public func waitForAccessToken(
+    authorization: DeviceAuthorization
+  ) async throws -> GitHubTokenGrant {
     guard isAvailable else {
       throw DeviceFlowError.clientIDMissing
     }
@@ -381,8 +460,8 @@ public struct GitHubDeviceFlowAuthorizer: DeviceFlowAuthorizing {
         clientID: clientID,
         deviceCode: authorization.deviceCode
       ) {
-      case .authorized(let token):
-        return token
+      case .authorized(let grant):
+        return grant
       case .authorizationPending:
         continue
       case .slowDown(let requestedInterval):
@@ -394,5 +473,12 @@ public struct GitHubDeviceFlowAuthorizer: DeviceFlowAuthorizing {
     }
 
     throw DeviceFlowError.expiredCode
+  }
+
+  public func refreshAccessToken(refreshToken: String) async throws -> GitHubTokenGrant {
+    guard isAvailable else {
+      throw DeviceFlowError.clientIDMissing
+    }
+    return try await client.refreshAccessToken(clientID: clientID, refreshToken: refreshToken)
   }
 }

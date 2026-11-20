@@ -641,6 +641,28 @@ struct TaskListViewModelTests {
       calendar: calendar
     )
   }
+
+  @Test
+  func backgroundRefreshWaitsForTheTokenProviderToFinishRenewing() async {
+    let cache = ViewModelCacheStore()
+    let client = TokenRecordingIssueFetcher()
+    let viewModel = TaskListViewModel(
+      cacheStore: cache,
+      syncEngine: IssueSyncEngine(client: client, cacheStore: cache),
+      filterStore: ViewModelFilterStore()
+    )
+
+    // The provider suspends, as SettingsViewModel does while it renews an
+    // expiring token, and the refresh must use what it hands back.
+    viewModel.startBackgroundRefresh(every: .milliseconds(1)) {
+      await Task.yield()
+      return "renewed-token"
+    }
+    let token = await client.firstToken()
+    viewModel.stopBackgroundRefresh()
+
+    #expect(token == "renewed-token")
+  }
 }
 
 private func viewModelTestIssue(number: Int) -> LifeOSIssue {
@@ -760,5 +782,28 @@ private actor ControlledIssueFetcher: GitHubIssueFetching {
     }
     pending = nil
     continuation.resume(returning: issues)
+  }
+}
+
+private actor TokenRecordingIssueFetcher: GitHubIssueFetching {
+  private var tokens: [String] = []
+  private var waiters: [CheckedContinuation<String, Never>] = []
+
+  func fetchIssues(token: String, updatedAfter: Date?) async throws -> [LifeOSIssue] {
+    tokens.append(token)
+    for waiter in waiters {
+      waiter.resume(returning: token)
+    }
+    waiters = []
+    return []
+  }
+
+  func firstToken() async -> String {
+    if let first = tokens.first {
+      return first
+    }
+    return await withCheckedContinuation { continuation in
+      waiters.append(continuation)
+    }
   }
 }
