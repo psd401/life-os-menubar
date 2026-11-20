@@ -26,8 +26,11 @@ affected and still scans every PR. Four steps, in order:
 3. `xcodebuild test … -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO`
 4. `xcodebuild build -configuration Release … CODE_SIGNING_ALLOWED=NO`
 
-`CODE_SIGNING_ALLOWED=NO` is what lets an unsigned runner build and test the app;
-signing and notarization are a separate pipeline and out of scope here.
+The app target signs with the PSD Developer ID identity
+([decision 0006](../decisions/0006-psd-developer-id-signing.md)), which no
+runner has. `CODE_SIGNING_ALLOWED=NO` is what lets a runner build and test the
+app anyway; CodeQL's autobuild passes the same flag. Notarization is a separate
+pipeline and out of scope here.
 
 The runner is `xcode-27` (macOS 27 / Xcode 27), the toolchain the app is
 developed against — see [decision 0004](../decisions/0004-macos-26-floor.md).

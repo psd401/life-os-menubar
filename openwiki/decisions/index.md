@@ -15,6 +15,7 @@ landed yet says so — "accepted" is not "implemented".
 | [0003](0003-nexus-design-system.md) | Adopt the Nexus design system via NexusKit | 2026-10-31 | Implemented ([#19](https://github.com/psd401/life-os-menubar/issues/19)) |
 | [0004](0004-macos-26-floor.md) | Raise the deployment floor to macOS 26 | 2026-10-31 | Implemented ([#19](https://github.com/psd401/life-os-menubar/issues/19)) |
 | [0005](0005-configurable-task-repo.md) | Make the task repo user-configurable and publish the repo standard | 2026-10-31 | Implemented ([#21](https://github.com/psd401/life-os-menubar/issues/21)) |
+| [0006](0006-psd-developer-id-signing.md) | Sign local builds with the PSD Developer ID | 2026-11-19 | Implemented ([#47](https://github.com/psd401/life-os-menubar/issues/47)) |
 
 Standing decisions that predate this record and are enforced in code rather than
 argued here: GitHub Issues as the task store, the one-`status:`/one-`priority:`

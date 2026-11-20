@@ -56,13 +56,24 @@ xcodebuild build \
 ```
 
 These four are exactly what CI runs — see `.github/workflows/ci.yml` and
-`.psd/verify.json`. The install steps below add `-derivedDataPath build` to the
-same release build so the output lands somewhere predictable.
+`.psd/verify.json`. `CODE_SIGNING_ALLOWED=NO` lets them run on a Mac that does
+not have the PSD signing certificate. The install steps below drop it so the app
+you install is signed, and add `-derivedDataPath build` so the output lands
+somewhere predictable.
 
 ## Install
 
-There is no signed release yet (distribution is out of scope for v1.1), so build
-and install it locally:
+There is no notarized release yet (distribution is out of scope for v1.1), so
+build and install it locally. The app target signs with the Peninsula School
+District **Developer ID Application** certificate, team `87DL7L9GU6`
+([decision 0006](openwiki/decisions/0006-psd-developer-id-signing.md)). That
+identity and its private key must be in your login keychain:
+
+```sh
+security find-identity -v -p codesigning | grep 87DL7L9GU6
+```
+
+Then build, install, and launch:
 
 ```sh
 git clone https://github.com/psd401/life-os-menubar.git
@@ -73,8 +84,7 @@ xcodebuild build \
   -scheme LifeOSMenubar \
   -configuration Release \
   -destination 'platform=macOS' \
-  -derivedDataPath build \
-  CODE_SIGNING_ALLOWED=NO
+  -derivedDataPath build
 
 rm -rf /Applications/LifeOSMenubar.app
 ditto build/Build/Products/Release/LifeOSMenubar.app /Applications/LifeOSMenubar.app
@@ -85,6 +95,36 @@ Remove the old bundle first and copy with `ditto` rather than `cp -R`: copying a
 `.app` directory over an existing one **merges** the two, which leaves stale
 binaries and resources from the previous build inside the bundle and fails
 silently. This matters on every upgrade, not just the first install.
+
+### Keychain access across rebuilds
+
+The signature is what keeps the app's Keychain access silent from one build to
+the next. The token item's access list trusts the app by its designated
+requirement, and for this signature that requirement names the PSD team, not one
+binary:
+
+```sh
+codesign -d -r- /Applications/LifeOSMenubar.app
+# designated => anchor apple generic and identifier "com.krishagel.LifeOSMenubar"
+#   and (… certificate leaf[subject.OU] = "87DL7L9GU6")
+```
+
+- **The first signed build asks once.** macOS asks whether LifeOSMenubar may use
+  the confidential information stored in your keychain. Enter your login
+  password and select **Always Allow**. From then on, every build signed by the
+  PSD team under this app's bundle identifier reads the token without asking.
+  A different app signed by the same team still gets the prompt. Anyone who
+  holds the PSD Developer ID private key can build something that reads your
+  token, so guard the key like the token
+  ([decision 0006](openwiki/decisions/0006-psd-developer-id-signing.md#consequences)).
+- **An unsigned build asks every time.** A build with `CODE_SIGNING_ALLOWED=NO`
+  (the CI commands above) is signed ad hoc, and the Keychain trusts ad hoc code
+  by its exact code hash, which changes on every rebuild. Use it to test, not to
+  install.
+- **Without the PSD certificate** the build stops with
+  `No signing certificate "Developer ID Application" found`. Build with
+  `CODE_SIGNING_ALLOWED=NO` instead, and expect the Keychain prompt after each
+  install.
 
 ### First run: connect a task repo
 
@@ -126,10 +166,9 @@ application — no Dock icon, no app-switcher entry, no window on launch. Its on
 affordance is a menu bar item, which is easy to miss on a crowded menu bar.
 Confirm it is running with `pgrep -x LifeOSMenubar`.
 
-The build is unsigned (`CODE_SIGNING_ALLOWED=NO`). A locally built app carries no
-quarantine attribute, so Gatekeeper does not block it — but it is also not
-notarized, so do not expect it to survive being zipped and sent to another Mac.
-Signing and notarization are out of scope for v1.1.
+The build is signed but not notarized. A locally built app carries no quarantine
+attribute, so Gatekeeper does not block it, but do not expect it to survive being
+zipped and sent to another Mac. Notarization is out of scope for v1.1.
 
 To contribute, see [AGENTS.md](AGENTS.md) for the build/test/lint commands, the
 architecture map, and the evidence a PR must carry.
