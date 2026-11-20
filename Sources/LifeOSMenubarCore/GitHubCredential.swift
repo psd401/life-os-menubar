@@ -87,10 +87,17 @@ extension GitHubCredential {
   /// — which keeps a stored v1 personal access token signed in. Nil for
   /// anything else.
   public init?(storedData data: Data) {
-    if let stored = try? Self.decoder.decode(StoredCredential.self, from: data),
-      stored.version == StoredCredential.currentVersion,
-      !stored.accessToken.isEmpty
-    {
+    // Any JSON object is the structured format. One this version cannot read
+    // — a newer version's, say — is refused rather than falling through to
+    // the bare-token path, which would send the JSON text as a bearer token.
+    if (try? JSONSerialization.jsonObject(with: data)) is [String: Any] {
+      guard
+        let stored = try? Self.decoder.decode(StoredCredential.self, from: data),
+        stored.version == StoredCredential.currentVersion,
+        !stored.accessToken.isEmpty
+      else {
+        return nil
+      }
       self.init(
         accessToken: stored.accessToken,
         accessTokenExpiresAt: stored.accessTokenExpiresAt,

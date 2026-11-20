@@ -600,6 +600,25 @@ struct SettingsViewModelTests {
   }
 
   @Test
+  func losingARefreshRaceToAnotherCopyAdoptsItsTokenInsteadOfExpiring() async {
+    // Both copies read the same refresh token and spend it within one round
+    // trip. GitHub honours the first and refuses the second, but the first
+    // has already stored a valid pair, so the loser is not signed out.
+    let tokenStore = TokenStoreSpy(storedCredential: Self.expiringCredential(expiresIn: 60))
+    let winner = GitHubCredential(
+      accessToken: "gho_other_copy",
+      accessTokenExpiresAt: Self.now.addingTimeInterval(28_800),
+      refreshToken: "ghr_other_copy"
+    )
+    let refresher = RefreshRaceLoser(tokenStore: tokenStore, winnerStores: winner)
+    let viewModel = makeViewModel(tokenStore: tokenStore, tokenRefresher: refresher)
+
+    #expect(await viewModel.freshAccessToken() == "gho_other_copy")
+    #expect(!viewModel.isSignInExpired)
+    #expect(viewModel.validationState == .idle)
+  }
+
+  @Test
   func aFailedKeychainWriteAfterARefreshStillUsesTheRenewedToken() async {
     // GitHub retires the old pair the moment it issues the new one, so falling
     // back to the old token would fail every request until relaunch.
@@ -871,6 +890,18 @@ private actor TokenRefresherStub: GitHubTokenRefreshing {
       throw DeviceFlowError.invalidResponse
     }
     return try results.removeFirst().get()
+  }
+}
+
+/// Plays the copy that loses a refresh race: while its request is in flight
+/// the other copy stores its renewed pair, then GitHub refuses this one.
+private struct RefreshRaceLoser: GitHubTokenRefreshing {
+  let tokenStore: TokenStoreSpy
+  let winnerStores: GitHubCredential
+
+  func refreshAccessToken(refreshToken: String) async throws -> GitHubTokenGrant {
+    tokenStore.replaceStoredCredential(winnerStores)
+    throw DeviceFlowError.badRefreshToken
   }
 }
 

@@ -334,10 +334,20 @@ public final class SettingsViewModel: ObservableObject {
       }
       // Offline, or GitHub failing: keep the credential and try on the next
       // request. Only GitHub refusing the refresh token ends the sign-in.
-      if Self.isRefusal(error) {
-        isSignInExpired = true
-        validationState = .invalid(message: error.localizedDescription)
+      guard Self.isRefusal(error) else {
+        return
       }
+      // Two copies of the app that spend one refresh token within a round
+      // trip: GitHub refuses the second, but the first has already stored a
+      // valid pair. Adopt it rather than report an expired sign-in.
+      if let stored = try? tokenStore.loadCredential(),
+        stored.accessToken != expiring.accessToken
+      {
+        adopt(stored)
+        return
+      }
+      isSignInExpired = true
+      validationState = .invalid(message: error.localizedDescription)
     }
   }
 

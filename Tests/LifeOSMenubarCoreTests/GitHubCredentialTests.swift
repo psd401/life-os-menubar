@@ -94,6 +94,17 @@ struct GitHubCredentialTests {
   }
 
   @Test
+  func refusesAStoredJSONCredentialItCannotRead() {
+    // A newer version's item, or one this version cannot decode, must not
+    // fall through to the bare-token path: the JSON text itself would be
+    // sent to GitHub as the bearer token.
+    #expect(
+      GitHubCredential(storedData: Data(#"{"version":2,"accessToken":"gho_future"}"#.utf8)) == nil
+    )
+    #expect(GitHubCredential(storedData: Data(#"{"token":"gho_unknown_shape"}"#.utf8)) == nil)
+  }
+
+  @Test
   func refusesStoredDataThatIsNeitherFormat() {
     #expect(GitHubCredential(storedData: Data()) == nil)
     #expect(GitHubCredential(storedData: Data("   ".utf8)) == nil)
