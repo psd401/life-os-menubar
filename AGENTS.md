@@ -41,7 +41,10 @@ Keep `CODE_SIGNING_ALLOWED=NO` on the gate commands. The app target signs with
 the PSD Developer ID, team `87DL7L9GU6`
 ([decision 0006](openwiki/decisions/0006-psd-developer-id-signing.md)), and a
 runner or Mac without that certificate fails the build without the flag. The
-signed build for installing is in the [README](README.md#install).
+signed build for installing is in the [README](README.md#install). Debug is
+signed too, so Xcode's Run button needs the certificate as well. Without it,
+build from the command line with the flag, or switch the target to
+**Sign to Run Locally** in your checkout without committing that change.
 
 There is no package manager step: KeyboardShortcuts resolves through SwiftPM,
 and NexusKit is a local package under `Vendor/`. Toolchain and OS requirements

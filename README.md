@@ -111,8 +111,12 @@ codesign -d -r- /Applications/LifeOSMenubar.app
 
 - **The first signed build asks once.** macOS asks whether LifeOSMenubar may use
   the confidential information stored in your keychain. Enter your login
-  password and select **Always Allow**. Every later build signed by the same
-  team reads the token without asking.
+  password and select **Always Allow**. From then on, every build signed by the
+  PSD team under this app's bundle identifier reads the token without asking.
+  A different app signed by the same team still gets the prompt. Anyone who
+  holds the PSD Developer ID private key can build something that reads your
+  token, so guard the key like the token
+  ([decision 0006](openwiki/decisions/0006-psd-developer-id-signing.md#consequences)).
 - **An unsigned build asks every time.** A build with `CODE_SIGNING_ALLOWED=NO`
   (the CI commands above) is signed ad hoc, and the Keychain trusts ad hoc code
   by its exact code hash, which changes on every rebuild. Use it to test, not to

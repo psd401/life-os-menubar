@@ -46,20 +46,27 @@ DEVELOPMENT_TEAM = 87DL7L9GU6;
 ```
 
 No provisioning profile is needed: the app has no entitlements that require
-one. The designated requirement becomes:
+one. The designated requirement becomes the following. It is verbatim
+`codesign -d -r-` output, wrapped at the operators:
 
 ```text
 anchor apple generic and identifier "com.krishagel.LifeOSMenubar" and
 (certificate leaf[field.1.2.840.113635.100.6.1.9] /* exists */ or
- certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and
- certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and
- certificate leaf[subject.OU] = "87DL7L9GU6")
+certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and
+certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and
+certificate leaf[subject.OU] = "87DL7L9GU6")
 ```
+
+In the requirement language `and` binds tighter than `or`. So the
+parenthesized part reads: a Mac App Store signature, **or** a Developer ID
+chain whose leaf belongs to team `87DL7L9GU6`. The Apple anchor and the
+identifier apply to both branches.
 
 It names the team and the bundle ID, not a binary, so every rebuild satisfies
 it, and so does a renewed certificate from the same team. After one
-**Always Allow**, the partition list holds `teamid:87DL7L9GU6` and later builds
-read the item silently.
+**Always Allow**, the partition list holds `teamid:87DL7L9GU6`, and later builds
+read the item silently. "Who can read the token without a prompt", under
+Consequences, says exactly which binaries that covers.
 
 The CI gate keeps `CODE_SIGNING_ALLOWED=NO`, unchanged.
 
@@ -91,11 +98,36 @@ The CI gate keeps `CODE_SIGNING_ALLOWED=NO`, unchanged.
   autobuild: it runs
   `xcodebuild build … CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO`, as
   seen in the `Analyze (swift)` log of run 43329516680.
+- **Who can read the token without a prompt.** The ad hoc build trusted one
+  binary. Now silent access takes two checks, and both must pass:
+  - The **access list** needs identifier `com.krishagel.LifeOSMenubar`, signed
+    by team `87DL7L9GU6`.
+  - The **partition list** needs `teamid:87DL7L9GU6`.
+
+  Any binary signed with the PSD Developer ID key under this identifier
+  therefore reads the token silently, so whoever holds that private key now
+  defines the trust boundary. Guard the key like the token. Another PSD-signed
+  app with a different identifier passes the partition check, fails the access
+  list, and gets a prompt; the partition entry alone does not grant access.
+
+  Tested on 2026-11-19 with a dummy item and three probe binaries, never the
+  real token. A PSD-signed probe created the item, whose partition list was
+  `teamid:87DL7L9GU6` alone. With Keychain prompts disabled:
+  - The same identifier with a new code hash read the item.
+  - A PSD-signed probe with a different identifier got `errSecAuthFailed`
+    (-25293).
+  - An ad hoc probe got `errSecAuthFailed` as well.
 - **A distribution certificate signs development builds.** These builds are not
-  notarizable: they carry `com.apple.security.get-task-allow`, which Xcode adds
-  to every non-archive build, and they have no hardened runtime and no secure
-  timestamp. Notarization is still out of scope; whoever takes it on starts from
-  this identity.
+  notarizable: they carry `com.apple.security.get-task-allow`, and they have no
+  hardened runtime and no secure timestamp. Notarization is still out of scope;
+  whoever takes it on starts from this identity.
+- **Release builds carry `get-task-allow`.** Xcode adds it to every
+  non-archive build, Release included; the installed Release app has it.
+  Apple documents it as letting other processes, such as a debugger, attach to
+  the app. An attached debugger can read the app's memory, which holds the
+  token while the app runs. This is new: the ad hoc builds carried no
+  entitlements. Neither the old builds nor the new ones use the hardened
+  runtime.
 - **The first signed install asks once.** Existing installs carry an access list
   and partition list for an ad hoc build, so the first signed build gets one
   prompt. Enter the login password and select **Always Allow**.
