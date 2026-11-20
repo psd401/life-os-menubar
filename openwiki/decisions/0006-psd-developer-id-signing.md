@@ -5,6 +5,7 @@ okf_version: "0.1"
 # 0006 — Sign local builds with the PSD Developer ID
 
 **Date:** 2026-11-19 · **Status:** Implemented
+([#47](https://github.com/psd401/life-os-menubar/issues/47))
 
 ## Context
 
