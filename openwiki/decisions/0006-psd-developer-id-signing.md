@@ -45,6 +45,9 @@ CODE_SIGN_STYLE = Manual;
 DEVELOPMENT_TEAM = 87DL7L9GU6;
 ```
 
+Release also sets `CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO`, so the installed
+app carries no `get-task-allow` entitlement (see Consequences).
+
 No provisioning profile is needed: the app has no entitlements that require
 one. The designated requirement becomes the following. It is verbatim
 `codesign -d -r-` output, wrapped at the operators:
@@ -118,16 +121,18 @@ The CI gate keeps `CODE_SIGNING_ALLOWED=NO`, unchanged.
     (-25293).
   - An ad hoc probe got `errSecAuthFailed` as well.
 - **A distribution certificate signs development builds.** These builds are not
-  notarizable: they carry `com.apple.security.get-task-allow`, and they have no
-  hardened runtime and no secure timestamp. Notarization is still out of scope;
-  whoever takes it on starts from this identity.
-- **Release builds carry `get-task-allow`.** Xcode adds it to every
-  non-archive build, Release included; the installed Release app has it.
-  Apple documents it as letting other processes, such as a debugger, attach to
-  the app. An attached debugger can read the app's memory, which holds the
-  token while the app runs. This is new: the ad hoc builds carried no
-  entitlements. Neither the old builds nor the new ones use the hardened
-  runtime.
+  notarizable: they have no hardened runtime and no secure timestamp, and Debug
+  builds carry `com.apple.security.get-task-allow`. Notarization is still out
+  of scope; whoever takes it on starts from this identity.
+- **Only Debug builds carry `get-task-allow`.** Xcode adds it to every
+  non-archive build unless `CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO`, which
+  Release sets. Apple documents the entitlement as letting other processes,
+  such as a debugger, attach to the app, and an attached debugger can read the
+  app's memory, which holds the token while the app runs. Release turns it off
+  because the installed app holds a real credential. Debug keeps it so Xcode
+  can debug. The setting changes no part of the designated requirement, so
+  Keychain trust is unaffected. Neither the ad hoc builds nor these use the
+  hardened runtime.
 - **The first signed install asks once.** Existing installs carry an access list
   and partition list for an ad hoc build, so the first signed build gets one
   prompt. Enter the login password and select **Always Allow**.
@@ -145,3 +150,9 @@ keychain. Only attributes and access lists were read, never the token:
    over build 1. It launched with no SecurityAgent prompt. Settings then showed
    **Sign out**, so `SettingsViewModel` loaded a non-empty token from the
    Keychain at startup, and there was no Keychain error.
+3. Build 3 added `CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO` to Release
+   (cdhash `7ec2a6d0…`). `codesign -d --entitlements -` printed no
+   entitlements, and the designated requirement was identical to the one above.
+   It was installed over build 2 and launched with no SecurityAgent prompt. The
+   partition list was unchanged (`cdhash:069176…, teamid:87DL7L9GU6`), so no new
+   approval took place. A Debug build still carried `get-task-allow`.
