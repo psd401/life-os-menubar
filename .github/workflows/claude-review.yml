@@ -23,4 +23,4 @@ jobs:
     name: claude-review
     permissions: {}
     if: github.actor == 'dependabot[bot]'
-    uses: PSD401/.github/.github/workflows/reusable-claude-review-skip.yml@85ef062e6ec4492a075c731211c9fe405fa4c6cc # v1.2.0
+    uses: PSD401/.github/.github/workflows/reusable-claude-review-skip.yml@44b7d6ee7550f937305bd21744e111a2f7333dd4 # v1.9.0
