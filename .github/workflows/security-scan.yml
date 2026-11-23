@@ -1,0 +1,19 @@
+name: Security Scan
+on:
+  pull_request:
+  # The one check that keeps push: a direct push to the default branch gets its
+  # secret scan at once (psd-dev-standards standards/06 §4, Runner minutes).
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-scan:
+    permissions:
+      contents: read
+    uses: PSD401/.github/.github/workflows/reusable-security-scan.yml@78358a20608aa2f4de77e23f183c3ec7e1bbe795 # v1.12.0

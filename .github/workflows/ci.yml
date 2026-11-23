@@ -5,13 +5,10 @@ name: CI
 # If "Swift validation" ever becomes a required check, replace paths-ignore with
 # a skip inside the job: a workflow skipped this way reports no status, so a
 # required check would wait forever.
+# pull_request only: a check doesn't re-run after the merge (standards/06,
+# "Runner minutes").
 on:
   pull_request:
-    branches:
-      - main
-    paths-ignore:
-      - "**/*.md"
-  push:
     branches:
       - main
     paths-ignore:
